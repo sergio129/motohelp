@@ -55,6 +55,14 @@ export const serviceRequestService = {
       throw new Error("NOT_FOUND");
     }
 
+    if (request.status === "FINALIZADO" && data.status !== "FINALIZADO") {
+      throw new Error("INVALID_STATUS");
+    }
+
+    if (request.status === "CANCELADO" && data.status !== "CANCELADO") {
+      throw new Error("INVALID_STATUS");
+    }
+
     if (data.role === "ADMIN") {
       return serviceRequestRepository.updateStatus(data.id, data.status);
     }

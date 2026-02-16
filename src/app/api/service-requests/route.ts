@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createServiceRequestSchema } from "@/lib/validations/serviceRequest";
 import { serviceTypeRepository } from "@/repositories/serviceTypeRepository";
+import { z } from "zod";
 import { mechanicProfileService } from "@/services/mechanicProfileService";
 import { serviceRequestService } from "@/services/serviceRequestService";
 
@@ -47,23 +48,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Solo clientes pueden crear solicitudes" }, { status: 403 });
   }
 
-  const payload = await request.json();
-  const data = createServiceRequestSchema.parse(payload);
+  try {
+    const payload = await request.json();
+    const data = createServiceRequestSchema.parse(payload);
 
-  const serviceType = await serviceTypeRepository.listActive();
-  const isValidType = serviceType.some((type) => type.id === data.serviceTypeId);
-  if (!isValidType) {
-    return NextResponse.json({ message: "Tipo de servicio inválido" }, { status: 400 });
+    const serviceType = await serviceTypeRepository.listActive();
+    const isValidType = serviceType.some((type) => type.id === data.serviceTypeId);
+    if (!isValidType) {
+      return NextResponse.json({ message: "Tipo de servicio inválido" }, { status: 400 });
+    }
+
+    const created = await serviceRequestService.create({
+      clientId: session.user.id,
+      serviceTypeId: data.serviceTypeId,
+      description: data.description,
+      address: data.address,
+      scheduledAt: data.scheduledAt,
+      price: data.price,
+    });
+
+    return NextResponse.json(created, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const first = error.issues[0];
+      return NextResponse.json({ message: first?.message ?? "Datos inválidos" }, { status: 400 });
+    }
+    return NextResponse.json({ message: "Error al crear solicitud" }, { status: 500 });
   }
-
-  const created = await serviceRequestService.create({
-    clientId: session.user.id,
-    serviceTypeId: data.serviceTypeId,
-    description: data.description,
-    address: data.address,
-    scheduledAt: data.scheduledAt,
-    price: data.price,
-  });
-
-  return NextResponse.json(created, { status: 201 });
 }

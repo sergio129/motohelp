@@ -119,6 +119,10 @@ export default function AdminDashboard() {
     <div className="relative min-h-screen bg-slate-950 text-white">
       <div className="pointer-events-none absolute -left-32 top-[-120px] h-72 w-72 rounded-full bg-orange-500/10 blur-[140px]" />
       <div className="pointer-events-none absolute right-[-120px] top-32 h-72 w-72 rounded-full bg-red-500/10 blur-[160px]" />
+      <div className="pointer-events-none absolute inset-0 opacity-20">
+        <div className="absolute right-[-120px] top-20 h-[520px] w-[900px] bg-[url('/holo-bike.svg')] bg-contain bg-no-repeat" />
+        <div className="absolute left-[-120px] bottom-[-40px] h-[420px] w-[760px] bg-[url('/holo-bike.svg')] bg-contain bg-no-repeat" />
+      </div>
       <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
         <header>
           <h1 className="text-3xl font-semibold text-white">Panel de administración</h1>
@@ -198,8 +202,12 @@ export default function AdminDashboard() {
                     </span>
                     <Button
                       size="sm"
-                      variant={service.active ? "outline" : "default"}
-                      className={service.active ? "border-white/20 text-white hover:bg-white/10" : "bg-orange-500 text-slate-950 hover:bg-orange-400"}
+                      variant="default"
+                      className={
+                        service.active
+                          ? "bg-white/10 text-white hover:bg-white/20"
+                          : "bg-orange-500 text-slate-950 hover:bg-orange-400"
+                      }
                       onClick={() => handleToggleService(service.id, !service.active)}
                     >
                       {service.active ? "Desactivar" : "Activar"}
@@ -232,8 +240,12 @@ export default function AdminDashboard() {
                     </span>
                     <Button
                       size="sm"
-                      variant={profile.verified ? "outline" : "default"}
-                      className={profile.verified ? "border-white/20 text-white hover:bg-white/10" : "bg-orange-500 text-slate-950 hover:bg-orange-400"}
+                      variant="default"
+                      className={
+                        profile.verified
+                          ? "bg-white/10 text-white hover:bg-white/20"
+                          : "bg-orange-500 text-slate-950 hover:bg-orange-400"
+                      }
                       onClick={() => handleVerify(profile.userId, !profile.verified)}
                     >
                       {profile.verified ? "Desverificar" : "Aprobar"}
@@ -272,8 +284,8 @@ export default function AdminDashboard() {
                           Finalizar
                         </Button>
                       )}
-                      {request.status !== "CANCELADO" && (
-                        <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10" onClick={() => handleStatus(request.id, "CANCELADO")}>
+                      {request.status !== "CANCELADO" && request.status !== "FINALIZADO" && (
+                        <Button variant="default" size="sm" className="bg-white/10 text-white hover:bg-white/20" onClick={() => handleStatus(request.id, "CANCELADO")}>
                           Cancelar
                         </Button>
                       )}
