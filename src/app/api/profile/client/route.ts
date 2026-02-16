@@ -11,6 +11,10 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
   }
+  
+  if (session.user.role !== "CLIENT") {
+    return NextResponse.json({ message: "Solo clientes pueden acceder" }, { status: 403 });
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -25,6 +29,10 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+  }
+  
+  if (session.user.role !== "CLIENT") {
+    return NextResponse.json({ message: "Solo clientes pueden acceder" }, { status: 403 });
   }
 
   try {

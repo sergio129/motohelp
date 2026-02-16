@@ -24,6 +24,10 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
   }
+  
+  if (session.user.role !== "MECHANIC") {
+    return NextResponse.json({ message: "Solo mecánicos pueden acceder" }, { status: 403 });
+  }
 
   try {
     const payload = await request.json();

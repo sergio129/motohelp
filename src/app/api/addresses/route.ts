@@ -20,6 +20,10 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
   }
+  
+  if (session.user.role !== "CLIENT") {
+    return NextResponse.json({ message: "Solo clientes pueden crear direcciones" }, { status: 403 });
+  }
 
   try {
     const payload = await request.json();
@@ -38,6 +42,10 @@ export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+  }
+  
+  if (session.user.role !== "CLIENT") {
+    return NextResponse.json({ message: "Solo clientes pueden modificar direcciones" }, { status: 403 });
   }
 
   try {

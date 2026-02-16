@@ -9,6 +9,10 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
   }
+  
+  if (session.user.role !== "CLIENT") {
+    return NextResponse.json({ message: "Solo clientes pueden calificar" }, { status: 403 });
+  }
 
   try {
     const payload = await request.json();
