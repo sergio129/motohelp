@@ -55,88 +55,111 @@ export default function ClientDashboard() {
   function statusBadge(status: string) {
     const base = "inline-flex rounded-full px-3 py-1 text-xs font-semibold";
     const styles: Record<string, string> = {
-      PENDIENTE: "bg-yellow-100 text-yellow-800",
-      ACEPTADO: "bg-blue-100 text-blue-800",
-      EN_CAMINO: "bg-indigo-100 text-indigo-800",
-      EN_PROCESO: "bg-purple-100 text-purple-800",
-      FINALIZADO: "bg-green-100 text-green-800",
-      CANCELADO: "bg-red-100 text-red-800",
+      PENDIENTE: "bg-yellow-500/20 text-yellow-200",
+      ACEPTADO: "bg-blue-500/20 text-blue-200",
+      EN_CAMINO: "bg-indigo-500/20 text-indigo-200",
+      EN_PROCESO: "bg-purple-500/20 text-purple-200",
+      FINALIZADO: "bg-green-500/20 text-green-200",
+      CANCELADO: "bg-red-500/20 text-red-200",
     };
-    return `${base} ${styles[status] ?? "bg-slate-100 text-slate-700"}`;
+    return `${base} ${styles[status] ?? "bg-white/10 text-slate-200"}`;
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
-      <header>
-        <h1 className="text-3xl font-semibold">Panel de cliente</h1>
-        <p className="text-slate-600">Crea solicitudes y revisa el historial.</p>
-      </header>
+    <div className="relative min-h-screen bg-slate-950 text-white">
+      <div className="pointer-events-none absolute -left-32 top-[-120px] h-72 w-72 rounded-full bg-orange-500/10 blur-[140px]" />
+      <div className="pointer-events-none absolute right-[-120px] top-32 h-72 w-72 rounded-full bg-red-500/10 blur-[160px]" />
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
+        <header>
+          <h1 className="text-3xl font-semibold text-white">Panel de cliente</h1>
+          <p className="text-slate-300">Crea solicitudes y revisa el historial.</p>
+        </header>
 
-      <Card>
+        <Card className="border-white/10 bg-white/5 text-white">
         <CardHeader>
-          <CardTitle>Nueva solicitud</CardTitle>
+          <CardTitle className="text-white">Nueva solicitud</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="type">Tipo de servicio</Label>
-              <Input id="type" value={type} onChange={(event) => setType(event.target.value)} required />
+              <Label className="text-slate-200" htmlFor="type">Tipo de servicio</Label>
+              <Input
+                id="type"
+                value={type}
+                onChange={(event) => setType(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white"
+                required
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="scheduledAt">Fecha y hora</Label>
+              <Label className="text-slate-200" htmlFor="scheduledAt">Fecha y hora</Label>
               <Input
                 id="scheduledAt"
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={(event) => setScheduledAt(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white"
                 required
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="description">Descripción</Label>
+              <Label className="text-slate-200" htmlFor="description">Descripción</Label>
               <Input
                 id="description"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white"
                 required
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="address">Dirección</Label>
-              <Input id="address" value={address} onChange={(event) => setAddress(event.target.value)} required />
+              <Label className="text-slate-200" htmlFor="address">Dirección</Label>
+              <Input
+                id="address"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white"
+                required
+              />
             </div>
-            <Button type="submit" disabled={loading} className="md:col-span-2">
+            <Button type="submit" disabled={loading} className="bg-orange-500 text-slate-950 hover:bg-orange-400 md:col-span-2">
               {loading ? "Enviando..." : "Crear solicitud"}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <section className="grid gap-4">
-        <h2 className="text-xl font-semibold">Historial reciente</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {data?.map((item) => (
-            <Card key={item.id}>
-              <CardHeader>
-                <CardTitle>{item.type}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-slate-600">
-                <p>{item.description}</p>
-                <p>Dirección: {item.address}</p>
-                <div className="flex items-center justify-between">
-                  <span className={statusBadge(item.status)}>{item.status}</span>
-                  {item.status === "PENDIENTE" && (
-                    <Button variant="outline" size="sm" onClick={() => handleCancel(item.id)}>
-                      Cancelar
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {!data?.length && <p className="text-slate-500">Sin solicitudes todavía.</p>}
-        </div>
-      </section>
+        <section className="grid gap-4">
+          <h2 className="text-xl font-semibold text-white">Historial reciente</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {data?.map((item) => (
+              <Card key={item.id} className="border-white/10 bg-white/5 text-white">
+                <CardHeader>
+                  <CardTitle className="text-white">{item.type}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-slate-200">
+                  <p>{item.description}</p>
+                  <p>Dirección: {item.address}</p>
+                  <div className="flex items-center justify-between">
+                    <span className={statusBadge(item.status)}>{item.status}</span>
+                    {item.status === "PENDIENTE" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-white/20 text-white hover:bg-white/10"
+                        onClick={() => handleCancel(item.id)}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {!data?.length && <p className="text-slate-400">Sin solicitudes todavía.</p>}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

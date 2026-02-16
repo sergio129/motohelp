@@ -37,41 +37,45 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
-      <Card className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-6 py-12 text-white">
+      <div className="pointer-events-none absolute -left-24 top-[-120px] h-72 w-72 rounded-full bg-orange-500/20 blur-[120px]" />
+      <div className="pointer-events-none absolute right-[-120px] top-24 h-72 w-72 rounded-full bg-red-500/20 blur-[140px]" />
+      <Card className="w-full max-w-md border-white/10 bg-white/5 text-white shadow-2xl shadow-black/40">
         <CardHeader>
-          <CardTitle>Iniciar sesión</CardTitle>
+          <CardTitle className="text-white">Iniciar sesión</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label className="text-slate-200" htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white placeholder:text-slate-500"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label className="text-slate-200" htmlFor="password">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white placeholder:text-slate-500"
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button className="w-full" type="submit" disabled={loading}>
+            {error && <p className="text-sm text-red-300">{error}</p>}
+            <Button className="w-full bg-orange-500 text-slate-950 hover:bg-orange-400" type="submit" disabled={loading}>
               {loading ? "Ingresando..." : "Ingresar"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center text-sm text-slate-500">
-          ¿No tienes cuenta? <Link className="ml-1 text-slate-900" href="/auth/sign-up">Regístrate</Link>
+        <CardFooter className="flex justify-center text-sm text-slate-300">
+          ¿No tienes cuenta? <Link className="ml-1 text-orange-200" href="/auth/sign-up">Regístrate</Link>
         </CardFooter>
       </Card>
     </div>

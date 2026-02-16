@@ -86,31 +86,34 @@ export default function MechanicDashboard() {
   function statusBadge(status: string) {
     const base = "inline-flex rounded-full px-3 py-1 text-xs font-semibold";
     const styles: Record<string, string> = {
-      PENDIENTE: "bg-yellow-100 text-yellow-800",
-      ACEPTADO: "bg-blue-100 text-blue-800",
-      EN_CAMINO: "bg-indigo-100 text-indigo-800",
-      EN_PROCESO: "bg-purple-100 text-purple-800",
-      FINALIZADO: "bg-green-100 text-green-800",
-      CANCELADO: "bg-red-100 text-red-800",
+      PENDIENTE: "bg-yellow-500/20 text-yellow-200",
+      ACEPTADO: "bg-blue-500/20 text-blue-200",
+      EN_CAMINO: "bg-indigo-500/20 text-indigo-200",
+      EN_PROCESO: "bg-purple-500/20 text-purple-200",
+      FINALIZADO: "bg-green-500/20 text-green-200",
+      CANCELADO: "bg-red-500/20 text-red-200",
     };
-    return `${base} ${styles[status] ?? "bg-slate-100 text-slate-700"}`;
+    return `${base} ${styles[status] ?? "bg-white/10 text-slate-200"}`;
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
-      <header>
-        <h1 className="text-3xl font-semibold">Panel de mecánico</h1>
-        <p className="text-slate-600">Gestiona tu perfil y solicitudes asignadas.</p>
-      </header>
+    <div className="relative min-h-screen bg-slate-950 text-white">
+      <div className="pointer-events-none absolute -left-32 top-[-120px] h-72 w-72 rounded-full bg-orange-500/10 blur-[140px]" />
+      <div className="pointer-events-none absolute right-[-120px] top-32 h-72 w-72 rounded-full bg-red-500/10 blur-[160px]" />
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
+        <header>
+          <h1 className="text-3xl font-semibold text-white">Panel de mecánico</h1>
+          <p className="text-slate-300">Gestiona tu perfil y solicitudes asignadas.</p>
+        </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Perfil profesional</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-4 md:grid-cols-2" onSubmit={handleProfileSubmit}>
+        <Card className="border-white/10 bg-white/5 text-white">
+          <CardHeader>
+            <CardTitle className="text-white">Perfil profesional</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="grid gap-4 md:grid-cols-2" onSubmit={handleProfileSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="experienceYears">Años de experiencia</Label>
+              <Label className="text-slate-200" htmlFor="experienceYears">Años de experiencia</Label>
               <Input
                 id="experienceYears"
                 type="number"
@@ -118,37 +121,40 @@ export default function MechanicDashboard() {
                 value={experienceYears}
                 placeholder={profile?.experienceYears?.toString() ?? "Ej: 5"}
                 onChange={(event) => setExperienceYears(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white"
                 required={!profile}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="specialty">Especialidad</Label>
+              <Label className="text-slate-200" htmlFor="specialty">Especialidad</Label>
               <Input
                 id="specialty"
                 value={specialty}
                 placeholder={profile?.specialty ?? "Ej: Mecánica general"}
                 onChange={(event) => setSpecialty(event.target.value)}
+                className="border-white/10 bg-slate-900/60 text-white"
                 required={!profile}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="document">Documento (PDF o imagen)</Label>
+              <Label className="text-slate-200" htmlFor="document">Documento (PDF o imagen)</Label>
               <Input
                 id="document"
                 type="file"
                 accept=".pdf,image/png,image/jpeg"
+                className="border-white/10 bg-slate-900/60 text-white"
                 onChange={(event) => setDocument(event.target.files?.[0] ?? null)}
               />
             </div>
             <div className="flex items-center gap-4 md:col-span-2">
-              <Button type="submit" disabled={savingProfile}>
+              <Button type="submit" disabled={savingProfile} className="bg-orange-500 text-slate-950 hover:bg-orange-400">
                 {savingProfile ? "Guardando..." : "Guardar perfil"}
               </Button>
               <span className={statusBadge(profile?.verified ? "FINALIZADO" : "PENDIENTE")}>
                 {profile?.verified ? "Verificado" : "Pendiente de verificación"}
               </span>
               {profile?.documentUrl && (
-                <a className="text-sm text-slate-600 underline" href={profile.documentUrl} target="_blank">
+                <a className="text-sm text-slate-200 underline" href={profile.documentUrl} target="_blank">
                   Ver documento
                 </a>
               )}
@@ -157,65 +163,68 @@ export default function MechanicDashboard() {
         </CardContent>
       </Card>
 
-      <section className="grid gap-4">
-        <h2 className="text-xl font-semibold">Solicitudes asignadas</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {assigned?.map((item) => (
-            <Card key={item.id}>
+        <section className="grid gap-4">
+          <h2 className="text-xl font-semibold text-white">Solicitudes asignadas</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {assigned?.map((item) => (
+              <Card key={item.id} className="border-white/10 bg-white/5 text-white">
+                <CardHeader>
+                  <CardTitle className="text-white">{item.type}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-slate-200">
+                  <p>{item.description}</p>
+                  <p>Dirección: {item.address}</p>
+                  <span className={statusBadge(item.status)}>{item.status}</span>
+                  <div className="flex flex-wrap gap-2">
+                    {item.status === "ACEPTADO" && (
+                      <Button size="sm" className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => handleStatus(item.id, "EN_CAMINO")}>
+                        Marcar en camino
+                      </Button>
+                    )}
+                    {item.status === "EN_CAMINO" && (
+                      <Button size="sm" className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => handleStatus(item.id, "EN_PROCESO")}>
+                        Iniciar servicio
+                      </Button>
+                    )}
+                    {item.status === "EN_PROCESO" && (
+                      <Button size="sm" className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => handleStatus(item.id, "FINALIZADO")}>
+                        Finalizar
+                      </Button>
+                    )}
+                    {item.status !== "FINALIZADO" && item.status !== "CANCELADO" && (
+                      <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10" onClick={() => handleStatus(item.id, "CANCELADO")}>
+                        Cancelar
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {!assigned?.length && <p className="text-slate-400">No tienes solicitudes asignadas.</p>}
+          </div>
+        </section>
+
+        <section className="grid gap-4">
+          <h2 className="text-xl font-semibold text-white">Solicitudes disponibles</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {available?.map((item) => (
+            <Card key={item.id} className="border-white/10 bg-white/5 text-white">
               <CardHeader>
-                <CardTitle>{item.type}</CardTitle>
+                <CardTitle className="text-white">{item.type}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-600">
+              <CardContent className="space-y-3 text-sm text-slate-200">
                 <p>{item.description}</p>
                 <p>Dirección: {item.address}</p>
-                <span className={statusBadge(item.status)}>{item.status}</span>
-                <div className="flex flex-wrap gap-2">
-                  {item.status === "ACEPTADO" && (
-                    <Button size="sm" onClick={() => handleStatus(item.id, "EN_CAMINO")}>
-                      Marcar en camino
-                    </Button>
-                  )}
-                  {item.status === "EN_CAMINO" && (
-                    <Button size="sm" onClick={() => handleStatus(item.id, "EN_PROCESO")}>
-                      Iniciar servicio
-                    </Button>
-                  )}
-                  {item.status === "EN_PROCESO" && (
-                    <Button size="sm" onClick={() => handleStatus(item.id, "FINALIZADO")}>
-                      Finalizar
-                    </Button>
-                  )}
-                  {item.status !== "FINALIZADO" && item.status !== "CANCELADO" && (
-                    <Button variant="outline" size="sm" onClick={() => handleStatus(item.id, "CANCELADO")}>
-                      Cancelar
-                    </Button>
-                  )}
-                </div>
+                <Button className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => handleAccept(item.id)}>
+                  Aceptar solicitud
+                </Button>
               </CardContent>
             </Card>
           ))}
-          {!assigned?.length && <p className="text-slate-500">No tienes solicitudes asignadas.</p>}
-        </div>
-      </section>
-
-      <section className="grid gap-4">
-        <h2 className="text-xl font-semibold">Solicitudes disponibles</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {available?.map((item) => (
-          <Card key={item.id}>
-            <CardHeader>
-              <CardTitle>{item.type}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-600">
-              <p>{item.description}</p>
-              <p>Dirección: {item.address}</p>
-              <Button onClick={() => handleAccept(item.id)}>Aceptar solicitud</Button>
-            </CardContent>
-          </Card>
-        ))}
-          {!available?.length && <p className="text-slate-500">No hay solicitudes pendientes.</p>}
-        </div>
-      </section>
+            {!available?.length && <p className="text-slate-400">No hay solicitudes pendientes.</p>}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
