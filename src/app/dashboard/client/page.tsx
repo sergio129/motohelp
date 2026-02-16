@@ -19,7 +19,7 @@ type ServiceRequest = {
   createdAt: string;
   serviceType?: { id: string; name: string } | null;
   mechanicId?: string | null;
-  rating?: { id: string; rating: number; comment: string } | null;
+  review?: { id: string; rating: number; comment: string } | null;
 };
 
 type ServiceRequestDetail = ServiceRequest & {
@@ -379,9 +379,9 @@ export default function ClientDashboard() {
                   {/* Estado y calificación */}
                   <div className="flex items-center justify-between gap-2">
                     <span className={statusBadge(item.status)}>{item.status}</span>
-                    {item.rating && (
+                    {item.review && (
                       <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded">
-                        ⭐ {item.rating.rating}
+                        ⭐ {item.review.rating}
                       </span>
                     )}
                   </div>
@@ -409,7 +409,7 @@ export default function ClientDashboard() {
                   </div>
 
                   {/* Componente de calificación */}
-                  {item.status === "FINALIZADO" && !item.rating && (
+                  {item.status === "FINALIZADO" && !item.review && (
                     <div className="border-t border-white/10 pt-4 mt-4">
                       <p className="mb-3 text-xs text-slate-400">Califica este servicio:</p>
                       <RatingComponent
@@ -443,7 +443,7 @@ export default function ClientDashboard() {
                     </div>
                   )}
                   {/* Mostrar calificación existente */}
-                  {item.status === "FINALIZADO" && item.rating && (
+                  {item.status === "FINALIZADO" && item.review && (
                     <div className="border-t border-white/10 pt-4 mt-4">
                       <p className="mb-3 text-xs text-slate-400">Tu calificación:</p>
                       <div className="rounded-md border border-green-500/30 bg-green-500/10 p-3">
@@ -453,17 +453,17 @@ export default function ClientDashboard() {
                               <span
                                 key={i}
                                 className={`text-lg ${
-                                  i < item.rating!.rating ? "text-yellow-400" : "text-slate-600"
+                                  i < item.review!.rating ? "text-yellow-400" : "text-slate-600"
                                 }`}
                               >
                                 ★
                               </span>
                             ))}
                           </div>
-                          <span className="text-sm font-semibold text-green-400">{item.rating.rating}/5</span>
+                          <span className="text-sm font-semibold text-green-400">{item.review.rating}/5</span>
                         </div>
-                        {item.rating.comment && (
-                          <p className="text-sm text-slate-300">"{item.rating.comment}"</p>
+                        {item.review.comment && (
+                          <p className="text-sm text-slate-300">"{item.review.comment}"</p>
                         )}
                       </div>
                     </div>
@@ -891,7 +891,7 @@ export default function ClientDashboard() {
                 )}
 
                 {/* Calificación */}
-                {selectedServiceDetails?.rating && (
+                {selectedServiceDetails?.review && (
                   <Card className="border-orange-400/30 bg-orange-500/10">
                     <CardHeader>
                       <CardTitle className="text-orange-200">Tu calificación</CardTitle>
@@ -899,12 +899,12 @@ export default function ClientDashboard() {
                     <CardContent className="space-y-3 text-sm text-slate-200">
                       <div>
                         <p className="text-xs text-slate-400">Puntuación</p>
-                        <p className="text-lg">⭐ {selectedServiceDetails.rating.rating} / 5</p>
+                        <p className="text-lg">⭐ {selectedServiceDetails.review.rating} / 5</p>
                       </div>
-                      {selectedServiceDetails.rating.comment && (
+                      {selectedServiceDetails.review.comment && (
                         <div>
                           <p className="text-xs text-slate-400">Comentario</p>
-                          <p>{selectedServiceDetails.rating.comment}</p>
+                          <p>{selectedServiceDetails.review.comment}</p>
                         </div>
                       )}
                     </CardContent>
