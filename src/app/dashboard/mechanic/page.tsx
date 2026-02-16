@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { signOut } from "next-auth/react";
 import { fetcher } from "@/lib/fetcher";
@@ -21,6 +21,22 @@ type ServiceType = {
   id: string;
   name: string;
   description?: string | null;
+};
+
+type Address = {
+  id: string;
+  label?: string | null;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  reference?: string | null;
+  isPrimary: boolean;
+};
+
+type MechanicProfileResponse = {
+  user: { name: string; phone?: string | null; documentId?: string | null } | null;
 };
 
 type MechanicProfile = {
@@ -45,6 +61,14 @@ export default function MechanicDashboard() {
     "/api/mechanic-profile",
     fetcher
   );
+  const { data: personalData, mutate: refreshPersonal } = useSWR<MechanicProfileResponse>(
+    "/api/profile/mechanic",
+    fetcher
+  );
+  const { data: addresses, mutate: refreshAddresses } = useSWR<Address[]>(
+    "/api/addresses",
+    fetcher
+  );
   const { data: serviceTypes } = useSWR<ServiceType[]>("/api/service-types", fetcher);
 
   const [experienceYears, setExperienceYears] = useState("");
@@ -52,6 +76,20 @@ export default function MechanicDashboard() {
   const [document, setDocument] = useState<File | null>(null);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [documentId, setDocumentId] = useState("");
+  const [savingPersonal, setSavingPersonal] = useState(false);
+
+  const [addrLabel, setAddrLabel] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [reference, setReference] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
 
   async function handleAccept(id: string) {
     await fetch(`/api/service-requests/${id}`, {
@@ -62,6 +100,14 @@ export default function MechanicDashboard() {
     refreshAvailable();
     refreshAssigned();
   }
+
+  useEffect(() => {
+    if (personalData?.user) {
+      setName((prev) => prev || personalData.user?.name || "");
+      setPhone((prev) => prev || personalData.user?.phone || "");
+      setDocumentId((prev) => prev || personalData.user?.documentId || "");
+    }
+  }, [personalData]);
 
   async function handleStatus(id: string, status: string) {
     await fetch(`/api/service-requests/${id}`, {
@@ -97,6 +143,62 @@ export default function MechanicDashboard() {
     refreshProfile();
   }
 
+  async function handleSavePersonal(event: React.FormEvent) {
+    event.preventDefault();
+    setSavingPersonal(true);
+
+    await fetch("/api/profile/mechanic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        phone: phone || undefined,
+        documentId: documentId || undefined,
+      }),
+    });
+
+    setSavingPersonal(false);
+    refreshPersonal();
+  }
+
+  async function handleAddAddress(event: React.FormEvent) {
+    event.preventDefault();
+    setSavingAddress(true);
+
+    await fetch("/api/addresses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        label: addrLabel || undefined,
+        street,
+        city,
+        state,
+        postalCode,
+        country,
+        reference: reference || undefined,
+      }),
+    });
+
+    setAddrLabel("");
+    setStreet("");
+    setCity("");
+    setState("");
+    setPostalCode("");
+    setCountry("");
+    setReference("");
+    setSavingAddress(false);
+    refreshAddresses();
+  }
+
+  async function handleSetPrimary(id: string) {
+    await fetch("/api/addresses", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    refreshAddresses();
+  }
+
   function toggleService(id: string) {
     setSelectedServiceIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -114,6 +216,10 @@ export default function MechanicDashboard() {
       CANCELADO: "bg-red-500/20 text-red-200",
     };
     return `${base} ${styles[status] ?? "bg-white/10 text-slate-200"}`;
+  }
+
+  function formatAddress(item: Address) {
+    return `${item.street}, ${item.city}, ${item.state} ${item.postalCode}, ${item.country}`;
   }
 
   return (
@@ -139,6 +245,165 @@ export default function MechanicDashboard() {
             Cerrar sesión
           </Button>
         </header>
+
+        <Card className="border-white/10 bg-white/5 text-white">
+          <CardHeader>
+            <CardTitle className="text-white">Datos personales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSavePersonal}>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="name">Nombre completo</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="documentId">Documento</Label>
+                <Input
+                  id="documentId"
+                  value={documentId}
+                  onChange={(event) => setDocumentId(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={savingPersonal}
+                className="bg-orange-500 text-slate-950 hover:bg-orange-400 md:col-span-2"
+              >
+                {savingPersonal ? "Guardando..." : "Guardar datos"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-white/5 text-white">
+          <CardHeader>
+            <CardTitle className="text-white">Direcciones</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form className="grid gap-4 md:grid-cols-2" onSubmit={handleAddAddress}>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="addrLabel">Etiqueta</Label>
+                <Input
+                  id="addrLabel"
+                  value={addrLabel}
+                  onChange={(event) => setAddrLabel(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                  placeholder="Casa / Trabajo"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="street">Calle</Label>
+                <Input
+                  id="street"
+                  value={street}
+                  onChange={(event) => setStreet(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="city">Ciudad</Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="state">Estado</Label>
+                <Input
+                  id="state"
+                  value={state}
+                  onChange={(event) => setState(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="postal">Código postal</Label>
+                <Input
+                  id="postal"
+                  value={postalCode}
+                  onChange={(event) => setPostalCode(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-200" htmlFor="country">País</Label>
+                <Input
+                  id="country"
+                  value={country}
+                  onChange={(event) => setCountry(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                  required
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-slate-200" htmlFor="reference">Referencia</Label>
+                <Input
+                  id="reference"
+                  value={reference}
+                  onChange={(event) => setReference(event.target.value)}
+                  className="border-white/10 bg-slate-900/60 text-white"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={savingAddress}
+                className="bg-white/10 text-white hover:bg-white/20 md:col-span-2"
+              >
+                {savingAddress ? "Guardando..." : "Agregar dirección"}
+              </Button>
+            </form>
+
+            <div className="grid gap-3">
+              {addresses?.map((item) => (
+                <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/40 p-3 text-sm text-slate-200">
+                  <div>
+                    <p className="font-semibold text-white">{item.label ?? "Dirección"}</p>
+                    <p>{formatAddress(item)}</p>
+                    {item.reference && <p className="text-xs text-slate-400">{item.reference}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={item.isPrimary ? "rounded-full bg-orange-500/20 px-3 py-1 text-xs text-orange-200" : "rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200"}>
+                      {item.isPrimary ? "Principal" : "Secundaria"}
+                    </span>
+                    {!item.isPrimary && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-white/10 text-white hover:bg-white/20"
+                        onClick={() => handleSetPrimary(item.id)}
+                      >
+                        Hacer principal
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {!addresses?.length && <p className="text-slate-400">Aún no tienes direcciones guardadas.</p>}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="border-white/10 bg-white/5 text-white">
           <CardHeader>

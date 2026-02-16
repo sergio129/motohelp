@@ -29,10 +29,13 @@ model User {
   password  String
   role      Role             @default(CLIENT)
   phone     String?
+  documentId String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
   mechanicProfile MechanicProfile?
+  clientProfile   ClientProfile?
+  addresses       Address[]
   serviceRequests ServiceRequest[] @relation("ClientRequests")
   assignedServices ServiceRequest[] @relation("MechanicRequests")
 }
@@ -49,6 +52,38 @@ model MechanicProfile {
 
   user User @relation(fields: [userId], references: [id])
   services MechanicService[]
+}
+
+model ClientProfile {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  motoBrand String?
+  motoModel String?
+  motoYear  Int?
+  motoPlate String?
+  motoColor String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  label      String?
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  reference  String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model ServiceRequest {
