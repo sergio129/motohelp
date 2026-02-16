@@ -41,6 +41,17 @@ type ServiceType = {
   active: boolean;
 };
 
+type AdminStats = {
+  totalServices: number;
+  completedServices: number;
+  pendingServices: number;
+  canceledServices: number;
+  averageRating: number;
+  totalReviews: number;
+  verifiedMechanics: number;
+  servicesByStatus: Array<{ status: string; count: number }>;
+};
+
 export default function AdminDashboard() {
   const { data: users } = useSWR<User[]>("/api/users", fetcher);
   const { data: mechanics, mutate: refreshMechanics } = useSWR<MechanicProfile[]>(
@@ -55,6 +66,7 @@ export default function AdminDashboard() {
     "/api/admin/service-types",
     fetcher
   );
+  const { data: stats } = useSWR<AdminStats>("/api/admin/stats", fetcher);
 
   const [serviceName, setServiceName] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
@@ -139,6 +151,51 @@ export default function AdminDashboard() {
             Cerrar sesión
           </Button>
         </header>
+
+        {/* Estadísticas */}
+        <section>
+          <h2 className="mb-4 text-xl font-semibold text-white">Estadísticas</h2>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="border-orange-400/20 bg-orange-500/10">
+              <CardContent className="pt-6">
+                <div className="text-3xl font-bold text-orange-300">{stats?.totalServices || 0}</div>
+                <p className="text-xs text-orange-200">Total de servicios</p>
+              </CardContent>
+            </Card>
+            <Card className="border-green-400/20 bg-green-500/10">
+              <CardContent className="pt-6">
+                <div className="text-3xl font-bold text-green-300">{stats?.completedServices || 0}</div>
+                <p className="text-xs text-green-200">Servicios completados</p>
+              </CardContent>
+            </Card>
+            <Card className="border-yellow-400/20 bg-yellow-500/10">
+              <CardContent className="pt-6">
+                <div className="text-3xl font-bold text-yellow-300">{stats?.pendingServices || 0}</div>
+                <p className="text-xs text-yellow-200">Pendientes</p>
+              </CardContent>
+            </Card>
+            <Card className="border-blue-400/20 bg-blue-500/10">
+              <CardContent className="pt-6">
+                <div className="text-3xl font-bold text-blue-300">⭐ {stats?.averageRating || 0}</div>
+                <p className="text-xs text-blue-200">Rating promedio</p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Card className="border-white/10 bg-white/5">
+              <CardContent className="pt-6">
+                <div className="text-3xl font-bold text-white">{stats?.verifiedMechanics || 0}</div>
+                <p className="text-xs text-slate-400">Mecánicos verificados</p>
+              </CardContent>
+            </Card>
+            <Card className="border-white/10 bg-white/5">
+              <CardContent className="pt-6">
+                <div className="text-3xl font-bold text-white">{stats?.totalReviews || 0}</div>
+                <p className="text-xs text-slate-400">Calificaciones recibidas</p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
 
         <section className="grid gap-4">
           <h2 className="text-xl font-semibold text-white">Usuarios registrados</h2>

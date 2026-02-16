@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { signOut } from "next-auth/react";
+import toast from "react-hot-toast";
 import { fetcher } from "@/lib/fetcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,7 @@ type ServiceRequest = {
 type ServiceRequestDetail = ServiceRequest & {
   mechanic?: { id: string; name: string; phone?: string } | null;
   notes?: string | null;
+  statusHistory?: Array<{ previousStatus: string; newStatus: string; changedAt: string }>;
 };
 
 type ServiceType = {
@@ -84,6 +86,8 @@ export default function ClientDashboard() {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [selectedServiceIdForRating, setSelectedServiceIdForRating] = useState<string | null>(null);
   const [selectedServiceIdForDetails, setSelectedServiceIdForDetails] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState(""); // "" = todos
+  const [filterServiceType, setFilterServiceType] = useState(""); // "" = todos
 
   // SWR Hooks
   const { data, mutate } = useSWR<ServiceRequest[]>("/api/service-requests", fetcher);
@@ -129,20 +133,32 @@ export default function ClientDashboard() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
+    const loadingToast = toast.loading("Creando solicitud...");
 
-    await fetch("/api/service-requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ serviceTypeId, description, address, scheduledAt }),
-    });
+    try {
+      const res = await fetch("/api/service-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serviceTypeId, description, address, scheduledAt }),
+      });
 
-    setServiceTypeId("");
-    setDescription("");
-    setAddress("");
-    setScheduledAt("");
-    setLoading(false);
-    setSelectedAddressId("");
-    mutate();
+      if (res.ok) {
+        toast.success("¡Solicitud creada! Los mecánicos la verán pronto", { id: loadingToast });
+        setServiceTypeId("");
+        setDescription("");
+        setAddress("");
+        setScheduledAt("");
+        setSelectedAddressId("");
+        setIsRequestOpen(false);
+        mutate();
+      } else {
+        toast.error("Error al crear solicitud", { id: loadingToast });
+      }
+    } catch {
+      toast.error("Error al crear solicitud", { id: loadingToast });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSaveProfile(event: React.FormEvent) {
@@ -211,12 +227,22 @@ export default function ClientDashboard() {
   }
 
   async function handleCancel(id: string) {
-    await fetch(`/api/service-requests/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "CANCELADO" }),
-    });
-    mutate();
+    const loadingToast = toast.loading("Cancelando solicitud...");
+    try {
+      const res = await fetch(`/api/service-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CANCELADO" }),
+      });
+      if (res.ok) {
+        toast.success("Solicitud cancelada", { id: loadingToast });
+        mutate();
+      } else {
+        toast.error("Error al cancelar", { id: loadingToast });
+      }
+    } catch {
+      toast.error("Error al cancelar", { id: loadingToast });
+    }
   }
 
   function statusBadge(status: string) {
@@ -299,9 +325,49 @@ export default function ClientDashboard() {
         </Card>
 
         <section className="grid gap-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <Label className="text-slate-200 text-xs">Filtrar por estado</Label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="mt-1 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-white hover:border-orange-400/50 focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="">Todos</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="ACEPTADO">Aceptado</option>
+                <option value="EN_CAMINO">En camino</option>
+                <option value="EN_PROCESO">En proceso</option>
+                <option value="FINALIZADO">Finalizado</option>
+                <option value="CANCELADO">Cancelado</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-slate-200 text-xs">Filtrar por servicio</Label>
+              <select
+                value={filterServiceType}
+                onChange={(e) => setFilterServiceType(e.target.value)}
+                className="mt-1 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-white hover:border-orange-400/50 focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="">Todos</option>
+                {serviceTypes?.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <h2 className="text-xl font-semibold text-white">Historial reciente</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {data?.map((item) => (
+            {data
+              ?.filter(
+                (item) =>
+                  (!filterStatus || item.status === filterStatus) &&
+                  (!filterServiceType || item.serviceType?.id === filterServiceType)
+              )
+              .map((item) => (
               <Card key={item.id} className="border-white/10 bg-white/5 text-white">
                 <CardHeader>
                   <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
@@ -349,14 +415,22 @@ export default function ClientDashboard() {
                       <RatingComponent
                         serviceId={item.id}
                         onSubmit={async (rating, comment) => {
-                          const res = await fetch("/api/reviews", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ serviceId: item.id, rating, comment })
-                          });
-                          if (res.ok) {
-                            mutate();
-                            setSelectedServiceIdForRating(null);
+                          const loadingToast = toast.loading("Guardando calificación...");
+                          try {
+                            const res = await fetch("/api/reviews", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ serviceId: item.id, rating, comment })
+                            });
+                            if (res.ok) {
+                              toast.success("¡Gracias por calificar! ⭐", { id: loadingToast });
+                              mutate();
+                              setSelectedServiceIdForRating(null);
+                            } else {
+                              toast.error("Error al calificar", { id: loadingToast });
+                            }
+                          } catch {
+                            toast.error("Error al calificar", { id: loadingToast });
                           }
                         }}
                       />
@@ -801,6 +875,33 @@ export default function ClientDashboard() {
                           <p>{selectedServiceDetails.rating.comment}</p>
                         </div>
                       )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Timeline de estados */}
+                {selectedServiceDetails?.statusHistory && selectedServiceDetails.statusHistory.length > 0 && (
+                  <Card className="border-white/10 bg-white/5">
+                    <CardHeader>
+                      <CardTitle className="text-white">Historial de estados</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {selectedServiceDetails.statusHistory?.map((entry: any, idx: number) => (
+                        <div key={idx} className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className="h-3 w-3 rounded-full bg-orange-400" />
+                            {idx < (selectedServiceDetails.statusHistory?.length ?? 0) - 1 && (
+                              <div className="h-12 w-0.5 bg-orange-400/30" />
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4 pt-1">
+                            <p className="text-xs font-semibold text-orange-300">{entry.newStatus}</p>
+                            <p className="text-xs text-slate-400">
+                              {new Date(entry.changedAt).toLocaleString("es-ES")}
+                            </p>
+                          </div>
+                        </div>
+                      )) || <p className="text-xs text-slate-400">Sin historial</p>}
                     </CardContent>
                   </Card>
                 )}

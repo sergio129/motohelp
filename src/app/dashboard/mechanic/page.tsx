@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { signOut } from "next-auth/react";
+import toast from "react-hot-toast";
 import { fetcher } from "@/lib/fetcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,8 @@ type ServiceRequest = {
   address: string;
   status: string;
   serviceType?: { id: string; name: string } | null;
+  clientId: string;
+  client?: { id: string; name: string; email: string; phone?: string; documentId?: string } | null;
 };
 
 type ServiceType = {
@@ -93,15 +96,28 @@ export default function MechanicDashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedServiceIdForNotes, setSelectedServiceIdForNotes] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
+  const [filterAssignedStatus, setFilterAssignedStatus] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   async function handleAccept(id: string) {
-    await fetch(`/api/service-requests/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "assign" }),
-    });
-    refreshAvailable();
-    refreshAssigned();
+    const loadingToast = toast.loading("Aceptando solicitud...");
+    try {
+      const res = await fetch(`/api/service-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "assign" }),
+      });
+      if (res.ok) {
+        toast.success("¡Solicitud aceptada! Ya estás en camino", { id: loadingToast });
+        refreshAvailable();
+        refreshAssigned();
+      } else {
+        const data = await res.json();
+        toast.error(data.message || "Error al aceptar", { id: loadingToast });
+      }
+    } catch {
+      toast.error("Error al aceptar solicitud", { id: loadingToast });
+    }
   }
 
   useEffect(() => {
@@ -113,12 +129,28 @@ export default function MechanicDashboard() {
   }, [personalData]);
 
   async function handleStatus(id: string, status: string) {
-    await fetch(`/api/service-requests/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    refreshAssigned();
+    const statusMap: Record<string, string> = {
+      EN_CAMINO: "Rumbo al destino",
+      EN_PROCESO: "Iniciando servicio",
+      FINALIZADO: "Abriendo formulario de notas",
+      CANCELADO: "Cancelando servicio",
+    };
+    const loadingToast = toast.loading(`${statusMap[status] || "Actualizando"}...`);
+    try {
+      const res = await fetch(`/api/service-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        toast.success("✅ Estado actualizado", { id: loadingToast });
+        refreshAssigned();
+      } else {
+        toast.error("Error al actualizar", { id: loadingToast });
+      }
+    } catch {
+      toast.error("Error al actualizar", { id: loadingToast });
+    }
   }
 
   async function handleProfileSubmit(event: React.FormEvent) {
@@ -281,9 +313,29 @@ export default function MechanicDashboard() {
         </Card>
 
         <section className="grid gap-4">
+          <div className="flex items-end gap-3">
+            <div>
+              <Label className="text-slate-200 text-xs">Filtrar por estado</Label>
+              <select
+                value={filterAssignedStatus}
+                onChange={(e) => setFilterAssignedStatus(e.target.value)}
+                className="mt-1 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-white hover:border-orange-400/50 focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="">Todos</option>
+                <option value="ACEPTADO">Aceptado</option>
+                <option value="EN_CAMINO">En camino</option>
+                <option value="EN_PROCESO">En proceso</option>
+                <option value="FINALIZADO">Finalizado</option>
+                <option value="CANCELADO">Cancelado</option>
+              </select>
+            </div>
+          </div>
+
           <h2 className="text-xl font-semibold text-white">Solicitudes asignadas</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {assigned?.map((item) => (
+            {assigned
+              ?.filter((item) => !filterAssignedStatus || item.status === filterAssignedStatus)
+              .map((item) => (
               <Card key={item.id} className="border-white/10 bg-white/5 text-white">
                 <CardHeader>
                   <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
@@ -316,7 +368,7 @@ export default function MechanicDashboard() {
                         Cancelar
                       </Button>
                     )}
-                    <Button variant="default" size="sm" className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">
+                    <Button variant="default" size="sm" className="bg-slate-700/50 text-slate-200 hover:bg-slate-700" onClick={() => setSelectedClientId(item.clientId)}>
                       Ver cliente
                     </Button>
                   </div>
@@ -665,5 +717,68 @@ export default function MechanicDashboard() {
           </div>
         </div>
       ) : null}
-    </div>  );
+
+      {/* Modal para ver info del cliente */}
+      {selectedClientId && assigned?.find((s) => s.clientId === selectedClientId) ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
+            <div className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Información del cliente</h2>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="h-8 w-8 p-0 bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => setSelectedClientId(null)}
+                >
+                  ✕
+                </Button>
+              </div>
+
+              {assigned
+                ?.find((s) => s.clientId === selectedClientId)
+                ?.client && (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400">Nombre</p>
+                    <p className="text-sm font-semibold">
+                      {assigned.find((s) => s.clientId === selectedClientId)?.client?.name}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400">Teléfono</p>
+                    <p className="text-sm font-semibold">
+                      {assigned.find((s) => s.clientId === selectedClientId)?.client?.phone ||
+                        "No registrado"}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400">Email</p>
+                    <p className="text-sm font-semibold">
+                      {assigned.find((s) => s.clientId === selectedClientId)?.client?.email}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400">Documento</p>
+                    <p className="text-sm font-semibold">
+                      {assigned.find((s) => s.clientId === selectedClientId)?.client?.documentId ||
+                        "No registrado"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                className="mt-6 w-full bg-orange-500 text-slate-950 hover:bg-orange-400"
+                onClick={() => setSelectedClientId(null)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
