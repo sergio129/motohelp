@@ -21,19 +21,28 @@ export default function SignInPage() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
 
-    if (result?.error) {
-      setError("Credenciales inválidas");
+      if (result?.error) {
+        setError("Credenciales inválidas");
+        setLoading(false);
+        return;
+      }
+
+      if (result?.ok) {
+        // Redirigir al dashboard
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      console.error("Error en login:", err);
+      setError("Error al intentar iniciar sesión");
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
   }
 
   return (
