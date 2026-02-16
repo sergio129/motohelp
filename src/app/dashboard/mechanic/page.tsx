@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { signOut } from "next-auth/react";
 import { fetcher } from "@/lib/fetcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,9 +125,19 @@ export default function MechanicDashboard() {
         <div className="absolute left-[-140px] bottom-[-60px] h-[420px] w-[760px] bg-[url('/holo-bike.svg')] bg-contain bg-no-repeat" />
       </div>
       <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
-        <header>
-          <h1 className="text-3xl font-semibold text-white">Panel de mecánico</h1>
-          <p className="text-slate-300">Gestiona tu perfil y solicitudes asignadas.</p>
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold text-white">Panel de mecánico</h1>
+            <p className="text-slate-300">Gestiona tu perfil y solicitudes asignadas.</p>
+          </div>
+          <Button
+            type="button"
+            variant="default"
+            className="bg-white/10 text-white hover:bg-white/20"
+            onClick={() => signOut({ callbackUrl: "/" })}
+          >
+            Cerrar sesión
+          </Button>
         </header>
 
         <Card className="border-white/10 bg-white/5 text-white">
@@ -245,7 +256,7 @@ export default function MechanicDashboard() {
                       </Button>
                     )}
                     {item.status !== "FINALIZADO" && item.status !== "CANCELADO" && (
-                      <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10" onClick={() => handleStatus(item.id, "CANCELADO")}>
+                      <Button variant="default" size="sm" className="bg-white/10 text-white hover:bg-white/20" onClick={() => handleStatus(item.id, "CANCELADO")}> 
                         Cancelar
                       </Button>
                     )}

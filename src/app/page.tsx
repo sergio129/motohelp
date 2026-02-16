@@ -30,9 +30,9 @@ export default function Home() {
             </Button>
             <Button
               asChild
-              variant="outline"
+              variant="default"
               size="lg"
-              className="border-white/30 text-white hover:bg-white/10"
+              className="bg-white/10 text-white hover:bg-white/20"
             >
               <Link href="/auth/sign-in">Ingresar</Link>
             </Button>
@@ -88,7 +88,7 @@ export default function Home() {
                 Activa tu cuenta y prueba el flujo completo del MVP en minutos.
               </p>
             </div>
-            <Button asChild size="lg" className="bg-white text-slate-950 hover:bg-slate-100">
+            <Button asChild size="lg" className="bg-orange-500 text-slate-950 hover:bg-orange-400">
               <Link href="/auth/sign-up">Comenzar ahora</Link>
             </Button>
           </div>
