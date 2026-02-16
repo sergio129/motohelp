@@ -10,16 +10,23 @@ import { Label } from "@/components/ui/label";
 
 type ServiceRequest = {
   id: string;
-  type: string;
   description: string;
   address: string;
   status: string;
   createdAt: string;
+  serviceType?: { id: string; name: string } | null;
+};
+
+type ServiceType = {
+  id: string;
+  name: string;
+  description?: string | null;
 };
 
 export default function ClientDashboard() {
   const { data, mutate } = useSWR<ServiceRequest[]>("/api/service-requests", fetcher);
-  const [type, setType] = useState("");
+  const { data: serviceTypes } = useSWR<ServiceType[]>("/api/service-types", fetcher);
+  const [serviceTypeId, setServiceTypeId] = useState("");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
@@ -32,10 +39,10 @@ export default function ClientDashboard() {
     await fetch("/api/service-requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, description, address, scheduledAt }),
+      body: JSON.stringify({ serviceTypeId, description, address, scheduledAt }),
     });
 
-    setType("");
+    setServiceTypeId("");
     setDescription("");
     setAddress("");
     setScheduledAt("");
@@ -82,14 +89,23 @@ export default function ClientDashboard() {
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label className="text-slate-200" htmlFor="type">Tipo de servicio</Label>
-              <Input
-                id="type"
-                value={type}
-                onChange={(event) => setType(event.target.value)}
-                className="border-white/10 bg-slate-900/60 text-white"
+              <Label className="text-slate-200" htmlFor="serviceType">Tipo de servicio</Label>
+              <select
+                id="serviceType"
+                value={serviceTypeId}
+                onChange={(event) => setServiceTypeId(event.target.value)}
+                className="flex h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white"
                 required
-              />
+              >
+                <option value="" disabled>
+                  Selecciona un servicio
+                </option>
+                {serviceTypes?.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-200" htmlFor="scheduledAt">Fecha y hora</Label>
@@ -135,7 +151,7 @@ export default function ClientDashboard() {
             {data?.map((item) => (
               <Card key={item.id} className="border-white/10 bg-white/5 text-white">
                 <CardHeader>
-                  <CardTitle className="text-white">{item.type}</CardTitle>
+                  <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm text-slate-200">
                   <p>{item.description}</p>

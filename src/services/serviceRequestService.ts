@@ -18,12 +18,12 @@ export const serviceRequestService = {
   listAll() {
     return serviceRequestRepository.listAll();
   },
-  listAvailable() {
-    return serviceRequestRepository.listAvailable();
+  listAvailable(serviceTypeIds?: string[]) {
+    return serviceRequestRepository.listAvailable(serviceTypeIds);
   },
   create(data: {
     clientId: string;
-    type: string;
+    serviceTypeId: string;
     description: string;
     address: string;
     scheduledAt: Date;

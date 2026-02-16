@@ -37,7 +37,9 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const experienceYears = formData.get("experienceYears");
   const specialty = formData.get("specialty");
-  const parsed = mechanicProfileSchema.parse({ experienceYears, specialty });
+  const serviceTypeIdsRaw = formData.get("serviceTypeIds");
+  const serviceTypeIds = serviceTypeIdsRaw ? JSON.parse(String(serviceTypeIdsRaw)) : [];
+  const parsed = mechanicProfileSchema.parse({ experienceYears, specialty, serviceTypeIds });
 
   let documentUrl: string | undefined;
   const document = formData.get("document");
@@ -64,6 +66,7 @@ export async function POST(request: Request) {
     experienceYears: parsed.experienceYears,
     specialty: parsed.specialty,
     documentUrl,
+    serviceTypeIds: parsed.serviceTypeIds,
   });
 
   return NextResponse.json(profile);

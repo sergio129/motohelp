@@ -9,6 +9,7 @@ export const mechanicProfileService = {
     experienceYears: number;
     specialty: string;
     documentUrl?: string | null;
+    serviceTypeIds: string[];
   }) {
     return mechanicProfileRepository.upsert(data);
   },

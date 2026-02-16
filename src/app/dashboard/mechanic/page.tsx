@@ -10,10 +10,16 @@ import { Label } from "@/components/ui/label";
 
 type ServiceRequest = {
   id: string;
-  type: string;
   description: string;
   address: string;
   status: string;
+  serviceType?: { id: string; name: string } | null;
+};
+
+type ServiceType = {
+  id: string;
+  name: string;
+  description?: string | null;
 };
 
 type MechanicProfile = {
@@ -22,6 +28,7 @@ type MechanicProfile = {
   experienceYears: number;
   specialty: string;
   documentUrl?: string | null;
+  services?: { serviceType: ServiceType }[];
 };
 
 export default function MechanicDashboard() {
@@ -37,10 +44,12 @@ export default function MechanicDashboard() {
     "/api/mechanic-profile",
     fetcher
   );
+  const { data: serviceTypes } = useSWR<ServiceType[]>("/api/service-types", fetcher);
 
   const [experienceYears, setExperienceYears] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [document, setDocument] = useState<File | null>(null);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
 
   async function handleAccept(id: string) {
@@ -69,6 +78,10 @@ export default function MechanicDashboard() {
     const formData = new FormData();
     formData.append("experienceYears", experienceYears || String(profile?.experienceYears ?? ""));
     formData.append("specialty", specialty || String(profile?.specialty ?? ""));
+    const currentServices = selectedServiceIds.length
+      ? selectedServiceIds
+      : profile?.services?.map((service) => service.serviceType.id) ?? [];
+    formData.append("serviceTypeIds", JSON.stringify(currentServices));
     if (document) {
       formData.append("document", document);
     }
@@ -81,6 +94,12 @@ export default function MechanicDashboard() {
     setDocument(null);
     setSavingProfile(false);
     refreshProfile();
+  }
+
+  function toggleService(id: string) {
+    setSelectedServiceIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
   }
 
   function statusBadge(status: string) {
@@ -146,6 +165,36 @@ export default function MechanicDashboard() {
                 onChange={(event) => setDocument(event.target.files?.[0] ?? null)}
               />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label className="text-slate-200">Servicios que presta</Label>
+              <div className="grid gap-2 md:grid-cols-2">
+                {serviceTypes?.map((service) => {
+                  const isChecked = selectedServiceIds.includes(service.id) ||
+                    (!!profile?.services?.some((item) => item.serviceType.id === service.id) && selectedServiceIds.length === 0);
+                  return (
+                    <label
+                      key={service.id}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                        isChecked
+                          ? "border-orange-400/60 bg-orange-500/20 text-orange-100"
+                          : "border-white/10 bg-slate-900/40 text-slate-200"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleService(service.id)}
+                        className="accent-orange-400"
+                      />
+                      {service.name}
+                    </label>
+                  );
+                })}
+              </div>
+              {!serviceTypes?.length && (
+                <p className="text-xs text-slate-400">No hay servicios configurados aún.</p>
+              )}
+            </div>
             <div className="flex items-center gap-4 md:col-span-2">
               <Button type="submit" disabled={savingProfile} className="bg-orange-500 text-slate-950 hover:bg-orange-400">
                 {savingProfile ? "Guardando..." : "Guardar perfil"}
@@ -169,7 +218,7 @@ export default function MechanicDashboard() {
             {assigned?.map((item) => (
               <Card key={item.id} className="border-white/10 bg-white/5 text-white">
                 <CardHeader>
-                  <CardTitle className="text-white">{item.type}</CardTitle>
+                  <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-slate-200">
                   <p>{item.description}</p>
@@ -210,7 +259,7 @@ export default function MechanicDashboard() {
             {available?.map((item) => (
             <Card key={item.id} className="border-white/10 bg-white/5 text-white">
               <CardHeader>
-                <CardTitle className="text-white">{item.type}</CardTitle>
+                <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-200">
                 <p>{item.description}</p>

@@ -24,6 +24,22 @@ async function main() {
     },
   });
 
+  const serviceTypes = [
+    { name: "Cambio de aceite", description: "Cambio de aceite y filtro" },
+    { name: "Diagnóstico eléctrico", description: "Revisión del sistema eléctrico" },
+    { name: "Pinchazo / Llantas", description: "Reparación o cambio de llanta" },
+    { name: "Batería", description: "Carga o reemplazo de batería" },
+    { name: "Frenos", description: "Mantenimiento y ajuste de frenos" },
+  ];
+
+  for (const service of serviceTypes) {
+    await prisma.serviceType.upsert({
+      where: { name: service.name },
+      update: { description: service.description, active: true },
+      create: { ...service, active: true },
+    });
+  }
+
   console.log(`Admin listo: ${email}`);
 }
 

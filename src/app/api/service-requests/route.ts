@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createServiceRequestSchema } from "@/lib/validations/serviceRequest";
+import { serviceTypeRepository } from "@/repositories/serviceTypeRepository";
+import { mechanicProfileService } from "@/services/mechanicProfileService";
 import { serviceRequestService } from "@/services/serviceRequestService";
 
 export async function GET(request: Request) {
@@ -17,8 +19,12 @@ export async function GET(request: Request) {
       const requests = await serviceRequestService.listAssignedToMechanic(session.user.id);
       return NextResponse.json(requests);
     }
-
-    const requests = await serviceRequestService.listAvailable();
+    const profile = await mechanicProfileService.getByUserId(session.user.id);
+    const allowedServiceIds = profile?.services?.map((service) => service.serviceTypeId) ?? [];
+    if (!allowedServiceIds.length) {
+      return NextResponse.json([]);
+    }
+    const requests = await serviceRequestService.listAvailable(allowedServiceIds);
     return NextResponse.json(requests);
   }
 
@@ -43,9 +49,16 @@ export async function POST(request: Request) {
 
   const payload = await request.json();
   const data = createServiceRequestSchema.parse(payload);
+
+  const serviceType = await serviceTypeRepository.listActive();
+  const isValidType = serviceType.some((type) => type.id === data.serviceTypeId);
+  if (!isValidType) {
+    return NextResponse.json({ message: "Tipo de servicio inválido" }, { status: 400 });
+  }
+
   const created = await serviceRequestService.create({
     clientId: session.user.id,
-    type: data.type,
+    serviceTypeId: data.serviceTypeId,
     description: data.description,
     address: data.address,
     scheduledAt: data.scheduledAt,
