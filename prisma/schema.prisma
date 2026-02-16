@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  MECHANIC
+  ADMIN
+}
+
+enum ServiceStatus {
+  PENDIENTE
+  ACEPTADO
+  EN_CAMINO
+  EN_PROCESO
+  FINALIZADO
+  CANCELADO
+}
+
+model User {
+  id        String           @id @default(cuid())
+  name      String
+  email     String           @unique
+  password  String
+  role      Role             @default(CLIENT)
+  phone     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  mechanicProfile MechanicProfile?
+  serviceRequests ServiceRequest[] @relation("ClientRequests")
+  assignedServices ServiceRequest[] @relation("MechanicRequests")
+}
+
+model MechanicProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  verified        Boolean  @default(false)
+  experienceYears Int
+  specialty       String
+  documentUrl     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ServiceRequest {
+  id          String        @id @default(cuid())
+  clientId    String
+  mechanicId  String?
+  type        String
+  description String
+  address     String
+  scheduledAt DateTime
+  status      ServiceStatus @default(PENDIENTE)
+  price       Decimal?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  client   User   @relation("ClientRequests", fields: [clientId], references: [id])
+  mechanic User?  @relation("MechanicRequests", fields: [mechanicId], references: [id])
+  review   Review?
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  serviceId String   @unique
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  service ServiceRequest @relation(fields: [serviceId], references: [id])
+}
