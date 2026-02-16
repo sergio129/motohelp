@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RatingComponent } from "@/components/RatingComponent";
 
 type ServiceRequest = {
   id: string;
@@ -16,6 +17,13 @@ type ServiceRequest = {
   status: string;
   createdAt: string;
   serviceType?: { id: string; name: string } | null;
+  mechanicId?: string | null;
+  rating?: { id: string; rating: number; comment: string } | null;
+};
+
+type ServiceRequestDetail = ServiceRequest & {
+  mechanic?: { id: string; name: string; phone?: string } | null;
+  notes?: string | null;
 };
 
 type ServiceType = {
@@ -48,22 +56,12 @@ type ClientProfileResponse = {
 };
 
 export default function ClientDashboard() {
-  const { data, mutate } = useSWR<ServiceRequest[]>("/api/service-requests", fetcher);
-  const { data: serviceTypes } = useSWR<ServiceType[]>("/api/service-types", fetcher);
-  const { data: profileData, mutate: refreshProfile } = useSWR<ClientProfileResponse>(
-    "/api/profile/client",
-    fetcher
-  );
-  const { data: addresses, mutate: refreshAddresses } = useSWR<Address[]>(
-    "/api/addresses",
-    fetcher
-  );
+  // Estados primero
   const [serviceTypeId, setServiceTypeId] = useState("");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [documentId, setDocumentId] = useState("");
@@ -73,7 +71,6 @@ export default function ClientDashboard() {
   const [motoPlate, setMotoPlate] = useState("");
   const [motoColor, setMotoColor] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
-
   const [addrLabel, setAddrLabel] = useState("");
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
@@ -85,7 +82,24 @@ export default function ClientDashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [selectedServiceIdForRating, setSelectedServiceIdForRating] = useState<string | null>(null);
+  const [selectedServiceIdForDetails, setSelectedServiceIdForDetails] = useState<string | null>(null);
 
+  // SWR Hooks
+  const { data, mutate } = useSWR<ServiceRequest[]>("/api/service-requests", fetcher);
+  const { data: serviceTypes } = useSWR<ServiceType[]>("/api/service-types", fetcher);
+  const { data: profileData, mutate: refreshProfile } = useSWR<ClientProfileResponse>(
+    "/api/profile/client",
+    fetcher
+  );
+  const { data: addresses, mutate: refreshAddresses } = useSWR<Address[]>(
+    "/api/addresses",
+    fetcher
+  );
+  const { data: selectedServiceDetails } = useSWR<ServiceRequestDetail>(
+    selectedServiceIdForDetails ? `/api/service-requests/${selectedServiceIdForDetails}` : null,
+    fetcher
+  );
   const primaryAddress = addresses?.find((item) => item.isPrimary) ?? null;
   const primaryAddressText = primaryAddress ? formatAddress(primaryAddress) : "";
 
@@ -292,11 +306,22 @@ export default function ClientDashboard() {
                 <CardHeader>
                   <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm text-slate-200">
+                <CardContent className="space-y-3 text-sm text-slate-200">
                   <p>{item.description}</p>
                   <p>Dirección: {item.address}</p>
-                  <div className="flex items-center justify-between">
+                  
+                  {/* Estado y calificación */}
+                  <div className="flex items-center justify-between gap-2">
                     <span className={statusBadge(item.status)}>{item.status}</span>
+                    {item.rating && (
+                      <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded">
+                        ⭐ {item.rating.rating}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex flex-wrap gap-2">
                     {item.status === "PENDIENTE" && (
                       <Button
                         variant="default"
@@ -307,7 +332,36 @@ export default function ClientDashboard() {
                         Cancelar
                       </Button>
                     )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-orange-500/20 text-orange-300 hover:bg-orange-500/30"
+                      onClick={() => setSelectedServiceIdForDetails(item.id)}
+                    >
+                      Ver detalles
+                    </Button>
                   </div>
+
+                  {/* Componente de calificación */}
+                  {item.status === "FINALIZADO" && !item.rating && (
+                    <div className="border-t border-white/10 pt-4 mt-4">
+                      <p className="mb-3 text-xs text-slate-400">Califica este servicio:</p>
+                      <RatingComponent
+                        serviceId={item.id}
+                        onSubmit={async (rating, comment) => {
+                          const res = await fetch("/api/reviews", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ serviceId: item.id, rating, comment })
+                          });
+                          if (res.ok) {
+                            mutate();
+                            setSelectedServiceIdForRating(null);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -657,6 +711,103 @@ export default function ClientDashboard() {
           </div>
         </div>
       )}
-    </div>
-  );
+
+      {selectedServiceIdForDetails && selectedServiceDetails ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
+            <div className="max-h-[90vh] overflow-y-auto p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold">Detalles del servicio</h2>
+                  <p className="text-sm text-slate-400">Información completa de tu solicitud.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => setSelectedServiceIdForDetails(null)}
+                >
+                  Cerrar
+                </Button>
+              </div>
+
+              <div className="grid gap-4">
+                {/* Información general */}
+                <Card className="border-white/10 bg-white/5">
+                  <CardHeader>
+                    <CardTitle className="text-white">Servicio</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-slate-200">
+                    <div>
+                      <p className="text-xs text-slate-400">Tipo</p>
+                      <p>{selectedServiceDetails?.serviceType?.name ?? "Sin especificar"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Descripción</p>
+                      <p>{selectedServiceDetails?.description}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Dirección</p>
+                      <p>{selectedServiceDetails?.address}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Estado</p>
+                      <p className={statusBadge(selectedServiceDetails?.status || "PENDIENTE")}>{selectedServiceDetails?.status}</p>
+                    </div>
+                    {selectedServiceDetails?.notes && (
+                      <div>
+                        <p className="text-xs text-slate-400">Notas del mecánico</p>
+                        <p>{selectedServiceDetails.notes}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Mecánico asignado */}
+                {selectedServiceDetails?.mechanic && (
+                  <Card className="border-white/10 bg-white/5">
+                    <CardHeader>
+                      <CardTitle className="text-white">Mecánico asignado</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm text-slate-200">
+                      <div>
+                        <p className="text-xs text-slate-400">Nombre</p>
+                        <p>{selectedServiceDetails.mechanic.name}</p>
+                      </div>
+                      {selectedServiceDetails.mechanic.phone && (
+                        <div>
+                          <p className="text-xs text-slate-400">Teléfono</p>
+                          <p>{selectedServiceDetails.mechanic.phone}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Calificación */}
+                {selectedServiceDetails?.rating && (
+                  <Card className="border-orange-400/30 bg-orange-500/10">
+                    <CardHeader>
+                      <CardTitle className="text-orange-200">Tu calificación</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm text-slate-200">
+                      <div>
+                        <p className="text-xs text-slate-400">Puntuación</p>
+                        <p className="text-lg">⭐ {selectedServiceDetails.rating.rating} / 5</p>
+                      </div>
+                      {selectedServiceDetails.rating.comment && (
+                        <div>
+                          <p className="text-xs text-slate-400">Comentario</p>
+                          <p>{selectedServiceDetails.rating.comment}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>  );
 }

@@ -1,4 +1,5 @@
 import { serviceRequestRepository } from "@/repositories/serviceRequestRepository";
+import { statusHistoryRepository } from "@/repositories/statusHistoryRepository";
 
 type ServiceStatus =
   | "PENDIENTE"
@@ -12,15 +13,23 @@ export const serviceRequestService = {
   listByClient(clientId: string) {
     return serviceRequestRepository.listByClient(clientId);
   },
+
   listAssignedToMechanic(mechanicId: string) {
     return serviceRequestRepository.listAssignedToMechanic(mechanicId);
   },
+
   listAll() {
     return serviceRequestRepository.listAll();
   },
+
   listAvailable(serviceTypeIds?: string[]) {
     return serviceRequestRepository.listAvailable(serviceTypeIds);
   },
+
+  findById(id: string) {
+    return serviceRequestRepository.findById(id);
+  },
+
   create(data: {
     clientId: string;
     serviceTypeId: string;
@@ -31,9 +40,30 @@ export const serviceRequestService = {
   }) {
     return serviceRequestRepository.create(data);
   },
-  updateStatus(id: string, status: ServiceStatus) {
+
+  async updateNotes(id: string, notes: string, userId: string) {
+    const request = await serviceRequestRepository.findById(id);
+    if (!request) {
+      throw new Error("NOT_FOUND");
+    }
+    if (request.mechanicId !== userId) {
+      throw new Error("FORBIDDEN");
+    }
+    return serviceRequestRepository.updateNotes(id, notes);
+  },
+
+  async updateStatus(id: string, status: ServiceStatus) {
+    const request = await serviceRequestRepository.findById(id);
+    if (!request) {
+      throw new Error("NOT_FOUND");
+    }
+    
+    // Registrar cambio en historia
+    await statusHistoryRepository.create(id, request.status, status);
+    
     return serviceRequestRepository.updateStatus(id, status);
   },
+
   async assignMechanic(id: string, mechanicId: string) {
     const request = await serviceRequestRepository.findById(id);
     if (!request) {
@@ -42,8 +72,21 @@ export const serviceRequestService = {
     if (request.status !== "PENDIENTE" || request.mechanicId) {
       throw new Error("INVALID_STATUS");
     }
-    return serviceRequestRepository.assignMechanic(id, mechanicId);
+
+    // VALIDACIÓN CRÍTICA: un servicio activo por mecánico
+    const hasActive = await serviceRequestRepository.hasActiveMechanicService(mechanicId);
+    if (hasActive) {
+      throw new Error("El mecánico ya tiene un servicio en progreso");
+    }
+
+    const result = await serviceRequestRepository.assignMechanic(id, mechanicId);
+    
+    // Registrar en historia
+    await statusHistoryRepository.create(id, "PENDIENTE", "ACEPTADO");
+    
+    return result;
   },
+
   async updateStatusForRole(data: {
     id: string;
     status: ServiceStatus;
@@ -55,6 +98,7 @@ export const serviceRequestService = {
       throw new Error("NOT_FOUND");
     }
 
+    // No cambiar si ya fue finalizado o cancelado
     if (request.status === "FINALIZADO" && data.status !== "FINALIZADO") {
       throw new Error("INVALID_STATUS");
     }
@@ -64,6 +108,7 @@ export const serviceRequestService = {
     }
 
     if (data.role === "ADMIN") {
+      await statusHistoryRepository.create(data.id, request.status, data.status);
       return serviceRequestRepository.updateStatus(data.id, data.status);
     }
 
@@ -71,9 +116,11 @@ export const serviceRequestService = {
       if (request.clientId !== data.userId) {
         throw new Error("FORBIDDEN");
       }
+      // Cliente solo puede cancelar si está PENDIENTE
       if (request.status !== "PENDIENTE" || data.status !== "CANCELADO") {
         throw new Error("INVALID_STATUS");
       }
+      await statusHistoryRepository.create(data.id, request.status, data.status);
       return serviceRequestRepository.updateStatus(data.id, data.status);
     }
 
@@ -96,9 +143,19 @@ export const serviceRequestService = {
         throw new Error("INVALID_STATUS");
       }
 
+      await statusHistoryRepository.create(data.id, request.status, data.status);
       return serviceRequestRepository.updateStatus(data.id, data.status);
     }
 
     throw new Error("FORBIDDEN");
+  },
+
+  listFiltered(filter: {
+    status?: ServiceStatus;
+    serviceTypeId?: string;
+    mechanicId?: string;
+    clientId?: string;
+  }) {
+    return serviceRequestRepository.listFiltered(filter);
   },
 };

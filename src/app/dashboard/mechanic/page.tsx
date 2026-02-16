@@ -91,6 +91,8 @@ export default function MechanicDashboard() {
   const [reference, setReference] = useState("");
   const [savingAddress, setSavingAddress] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedServiceIdForNotes, setSelectedServiceIdForNotes] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
 
   async function handleAccept(id: string) {
     await fetch(`/api/service-requests/${id}`, {
@@ -302,7 +304,10 @@ export default function MechanicDashboard() {
                       </Button>
                     )}
                     {item.status === "EN_PROCESO" && (
-                      <Button size="sm" className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => handleStatus(item.id, "FINALIZADO")}>
+                      <Button size="sm" className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => {
+                        setSelectedServiceIdForNotes(item.id);
+                        setNotes("");
+                      }}>
                         Finalizar
                       </Button>
                     )}
@@ -311,6 +316,9 @@ export default function MechanicDashboard() {
                         Cancelar
                       </Button>
                     )}
+                    <Button variant="default" size="sm" className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">
+                      Ver cliente
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -606,6 +614,56 @@ export default function MechanicDashboard() {
           </div>
         </div>
       )}
-    </div>
-  );
+
+      {/* Modal para agregar notas al finalizar */}
+      {selectedServiceIdForNotes ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
+            <div className="p-6">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold">Finalizar servicio</h2>
+                <p className="text-sm text-slate-400">Agrega notas sobre el trabajo realizado (opcional).</p>
+              </div>
+
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ej: Se revisó el motor, se reemplazó filtro de aire, afinamiento completo..."
+                className="min-h-24 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
+              />
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="default"
+                  className="flex-1 bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => {
+                    setSelectedServiceIdForNotes(null);
+                    setNotes("");
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 bg-orange-500 text-slate-950 hover:bg-orange-400"
+                  onClick={async () => {
+                    await fetch(`/api/service-requests/${selectedServiceIdForNotes}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ action: "updateStatus", status: "FINALIZADO", notes }),
+                    });
+                    refreshAssigned();
+                    setSelectedServiceIdForNotes(null);
+                    setNotes("");
+                  }}
+                >
+                  Finalizar y guardar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>  );
 }
