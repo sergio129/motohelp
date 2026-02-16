@@ -15,18 +15,67 @@ export function RatingComponent({ serviceId, onSubmit, isLoading }: RatingCompon
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedRating, setSubmittedRating] = useState(0);
+  const [submittedComment, setSubmittedComment] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
       await onSubmit(rating, comment);
-      setRating(5);
-      setComment("");
+      // Guardar los datos enviados para mostrarlos en modo lectura
+      setSubmittedRating(rating);
+      setSubmittedComment(comment);
+      setIsSubmitted(true);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Vista después de enviar - modo solo lectura
+  if (isSubmitted) {
+    return (
+      <Card className="border-green-500/30 bg-green-500/10 text-white">
+        <CardHeader>
+          <CardTitle className="text-green-400">✓ Calificación enviada</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Tu calificación</Label>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`text-xl ${i < submittedRating ? "text-yellow-400" : "text-slate-600"}`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span className="text-lg font-semibold text-green-400">{submittedRating}/5</span>
+              </div>
+            </div>
+
+            {submittedComment && (
+              <div className="space-y-2">
+                <Label className="text-slate-300">Tu comentario</Label>
+                <p className="rounded-md border border-white/10 bg-slate-900/40 px-3 py-2 text-slate-200">
+                  {submittedComment}
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-green-300">
+              Gracias por tu calificación. Esta información ayuda a mejorar el servicio.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-white/10 bg-white/5 text-white">
