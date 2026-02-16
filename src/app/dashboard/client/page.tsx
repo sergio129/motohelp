@@ -425,15 +425,47 @@ export default function ClientDashboard() {
                             if (res.ok) {
                               toast.success("¡Gracias por calificar! ⭐", { id: loadingToast });
                               mutate();
-                              setSelectedServiceIdForRating(null);
                             } else {
-                              toast.error("Error al calificar", { id: loadingToast });
+                              const errorData = await res.json();
+                              const errorMessage = errorData.message || "Error al calificar";
+                              toast.error(errorMessage, { id: loadingToast });
+                              throw new Error(errorMessage);
                             }
-                          } catch {
-                            toast.error("Error al calificar", { id: loadingToast });
+                          } catch (error) {
+                            const msg = error instanceof Error ? error.message : "Error de conexión";
+                            if (!msg.includes("Error al calificar")) {
+                              toast.error(msg, { id: loadingToast });
+                            }
+                            throw error;
                           }
                         }}
                       />
+                    </div>
+                  )}
+                  {/* Mostrar calificación existente */}
+                  {item.status === "FINALIZADO" && item.rating && (
+                    <div className="border-t border-white/10 pt-4 mt-4">
+                      <p className="mb-3 text-xs text-slate-400">Tu calificación:</p>
+                      <div className="rounded-md border border-green-500/30 bg-green-500/10 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-lg ${
+                                  i < item.rating!.rating ? "text-yellow-400" : "text-slate-600"
+                                }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                          <span className="text-sm font-semibold text-green-400">{item.rating.rating}/5</span>
+                        </div>
+                        {item.rating.comment && (
+                          <p className="text-sm text-slate-300">"{item.rating.comment}"</p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </CardContent>

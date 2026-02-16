@@ -9,22 +9,23 @@ interface RatingComponentProps {
   serviceId: string;
   onSubmit: (rating: number, comment: string) => Promise<void>;
   isLoading?: boolean;
+  existingRating?: { id: string; rating: number; comment: string } | null;
 }
 
-export function RatingComponent({ serviceId, onSubmit, isLoading }: RatingComponentProps) {
+export function RatingComponent({ serviceId, onSubmit, isLoading, existingRating }: RatingComponentProps) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedRating, setSubmittedRating] = useState(0);
-  const [submittedComment, setSubmittedComment] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(existingRating ? true : false);
+  const [submittedRating, setSubmittedRating] = useState(existingRating?.rating || 0);
+  const [submittedComment, setSubmittedComment] = useState(existingRating?.comment || "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
       await onSubmit(rating, comment);
-      // Guardar los datos enviados para mostrarlos en modo lectura
+      // Solo marcar como submitted si no hubo error
       setSubmittedRating(rating);
       setSubmittedComment(comment);
       setIsSubmitted(true);
