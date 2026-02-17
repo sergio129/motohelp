@@ -97,7 +97,6 @@ export default function MechanicDashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedServiceIdForNotes, setSelectedServiceIdForNotes] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
-  const [filterAssignedStatus, setFilterAssignedStatus] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   async function handleAccept(id: string) {
@@ -313,29 +312,72 @@ export default function MechanicDashboard() {
           </CardContent>
         </Card>
 
+        {/* SOLICITUDES DISPONIBLES - Destacadas al inicio */}
         <section className="grid gap-4">
-          <div className="flex items-end gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/20">
+              <span className="text-lg">🔔</span>
+            </div>
             <div>
-              <Label className="text-slate-200 text-xs">Filtrar por estado</Label>
-              <select
-                value={filterAssignedStatus}
-                onChange={(e) => setFilterAssignedStatus(e.target.value)}
-                className="mt-1 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-white hover:border-orange-400/50 focus:ring-2 focus:ring-orange-400"
-              >
-                <option value="">Todos</option>
-                <option value="ACEPTADO">Aceptado</option>
-                <option value="EN_CAMINO">En camino</option>
-                <option value="EN_PROCESO">En proceso</option>
-                <option value="FINALIZADO">Finalizado</option>
-                <option value="CANCELADO">Cancelado</option>
-              </select>
+              <h2 className="text-xl font-semibold text-white">Solicitudes disponibles</h2>
+              <p className="text-xs text-slate-400">Nuevas solicitudes que puedes aceptar</p>
+            </div>
+          </div>
+          
+          {!profile?.verified && (
+            <Card className="border-orange-500/30 bg-orange-500/10">
+              <CardContent className="pt-6">
+                <p className="text-sm text-orange-200">
+                  ⏳ <strong>Tu perfil está pendiente de verificación.</strong> El administrador debe aprobar tu perfil profesional antes de que puedas ver y aceptar solicitudes de servicio.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {available?.map((item) => (
+            <Card key={item.id} className="border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-orange-500/5 text-white shadow-lg shadow-orange-500/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <span className="text-orange-400">◆</span>
+                  {item.serviceType?.name ?? "Servicio"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-slate-200">
+                <p className="font-medium">{item.description}</p>
+                <p className="text-xs text-slate-300">📍 {item.address}</p>
+                <Button className="w-full bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold" onClick={() => handleAccept(item.id)}>
+                  Aceptar solicitud
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+            {!available?.length && !profile?.verified && <p className="text-slate-400">No hay solicitudes disponibles mientras tu perfil está en verificación.</p>}
+            {!available?.length && profile?.verified && (
+              <Card className="border-white/10 bg-white/5 md:col-span-2">
+                <CardContent className="py-8 text-center">
+                  <p className="text-slate-400">✓ No hay nuevas solicitudes en este momento</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </section>
+
+        {/* SERVICIOS ACTIVOS - En proceso */}
+        <section className="grid gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
+              <span className="text-lg">⚙️</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Servicios activos</h2>
+              <p className="text-xs text-slate-400">Servicios que estás gestionando actualmente</p>
             </div>
           </div>
 
-          <h2 className="text-xl font-semibold text-white">Solicitudes asignadas</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {assigned
-              ?.filter((item) => !filterAssignedStatus || item.status === filterAssignedStatus)
+              ?.filter((item) => ["ACEPTADO", "EN_CAMINO", "EN_PROCESO"].includes(item.status))
               .map((item) => (
               <Card key={item.id} className="border-white/10 bg-white/5 text-white">
                 <CardHeader>
@@ -343,7 +385,7 @@ export default function MechanicDashboard() {
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-slate-200">
                   <p>{item.description}</p>
-                  <p>Dirección: {item.address}</p>
+                  <p className="text-xs text-slate-300">📍 {item.address}</p>
                   <span className={statusBadge(item.status)}>{formatStatus(item.status)}</span>
                   <div className="flex flex-wrap gap-2">
                     {item.status === "ACEPTADO" && (
@@ -364,11 +406,9 @@ export default function MechanicDashboard() {
                         Finalizar
                       </Button>
                     )}
-                    {item.status !== "FINALIZADO" && item.status !== "CANCELADO" && (
-                      <Button variant="default" size="sm" className="bg-white/10 text-white hover:bg-white/20" onClick={() => handleStatus(item.id, "CANCELADO")}> 
-                        Cancelar
-                      </Button>
-                    )}
+                    <Button variant="default" size="sm" className="bg-white/10 text-white hover:bg-white/20" onClick={() => handleStatus(item.id, "CANCELADO")}> 
+                      Cancelar
+                    </Button>
                     <Button variant="default" size="sm" className="bg-slate-700/50 text-slate-200 hover:bg-slate-700" onClick={() => setSelectedClientId(item.clientId)}>
                       Ver cliente
                     </Button>
@@ -376,41 +416,71 @@ export default function MechanicDashboard() {
                 </CardContent>
               </Card>
             ))}
-            {!assigned?.length && <p className="text-slate-400">No tienes solicitudes asignadas.</p>}
+            {!assigned?.filter((item) => ["ACEPTADO", "EN_CAMINO", "EN_PROCESO"].includes(item.status)).length && (
+              <p className="text-slate-400 md:col-span-2">No tienes servicios activos en este momento.</p>
+            )}
           </div>
         </section>
 
+        {/* HISTORIAL DE SERVICIOS - Tabla compacta */}
         <section className="grid gap-4">
-          <h2 className="text-xl font-semibold text-white">Solicitudes disponibles</h2>
-          
-          {!profile?.verified && (
-            <Card className="border-orange-500/30 bg-orange-500/10">
-              <CardContent className="pt-6">
-                <p className="text-sm text-orange-200">
-                  ⏳ <strong>Tu perfil está pendiente de verificación.</strong> El administrador debe aprobar tu perfil profesional antes de que puedas ver y aceptar solicitudes de servicio.
-                </p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-700/40">
+              <span className="text-lg">📋</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Historial de servicios</h2>
+              <p className="text-xs text-slate-400">Servicios completados y cancelados</p>
+            </div>
+          </div>
+
+          {assigned?.filter((item) => ["FINALIZADO", "CANCELADO"].includes(item.status)).length ? (
+            <Card className="border-white/10 bg-white/5 text-white overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-white/10 bg-white/5">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">Servicio</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">Descripción</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-200">Dirección</th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-200">Estado</th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-200">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {assigned
+                      ?.filter((item) => ["FINALIZADO", "CANCELADO"].includes(item.status))
+                      .map((item) => (
+                      <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-3 font-medium text-white">{item.serviceType?.name ?? "Servicio"}</td>
+                        <td className="px-4 py-3 text-slate-300 max-w-xs truncate">{item.description}</td>
+                        <td className="px-4 py-3 text-slate-300 text-xs max-w-xs truncate">{item.address}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={statusBadge(item.status)}>{formatStatus(item.status)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="bg-slate-700/50 text-slate-200 hover:bg-slate-700 text-xs" 
+                            onClick={() => setSelectedClientId(item.clientId)}
+                          >
+                            Ver cliente
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ) : (
+            <Card className="border-white/10 bg-white/5">
+              <CardContent className="py-8 text-center">
+                <p className="text-slate-400">No hay servicios en el historial aún.</p>
               </CardContent>
             </Card>
           )}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {available?.map((item) => (
-            <Card key={item.id} className="border-white/10 bg-white/5 text-white">
-              <CardHeader>
-                <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-200">
-                <p>{item.description}</p>
-                <p>Dirección: {item.address}</p>
-                <Button className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => handleAccept(item.id)}>
-                  Aceptar solicitud
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-            {!available?.length && !profile?.verified && <p className="text-slate-400">No hay solicitudes disponibles mientras tu perfil está en verificación.</p>}
-            {!available?.length && profile?.verified && <p className="text-slate-400">No hay solicitudes pendientes.</p>}
-          </div>
         </section>
       </div>
 
