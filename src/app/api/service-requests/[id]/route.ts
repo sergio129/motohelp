@@ -110,6 +110,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       
       // Enviar notificación según el nuevo estado (en background)
       if (updated.client?.email && updated.mechanic && updated.serviceType) {
+        console.log(`[Notification] Sending ${data.status} notification to ${updated.client.email}`);
         NotificationService.notifyStatusChange(data.status, {
           clientEmail: updated.client.email,
           clientName: updated.client.name,
@@ -118,7 +119,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
           address: updated.address,
           notes: updated.notes || undefined,
           serviceRequestId: updated.id,
-        }).catch(err => console.error("Error sending status notification:", err));
+        }).catch(err => console.error(`[Notification] Error sending ${data.status} notification:`, err));
+      } else {
+        console.warn(`[Notification] Cannot send notification - Missing data: client=${!!updated.client?.email}, mechanic=${!!updated.mechanic}, serviceType=${!!updated.serviceType}`);
       }
       
       return NextResponse.json(updated);

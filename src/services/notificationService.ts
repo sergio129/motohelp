@@ -153,6 +153,7 @@ export class NotificationService {
    */
   static async notifyServiceInProgress(data: ServiceInProgressData): Promise<boolean> {
     try {
+      console.log("[NotificationService] Preparing EN_PROCESO email for:", data.clientEmail);
       const html = emailServiceInProgress({
         clientName: data.clientName,
         mechanicName: data.mechanicName,
@@ -160,12 +161,14 @@ export class NotificationService {
         address: data.address,
       });
 
+      console.log("[NotificationService] Sending EN_PROCESO email...");
       await sendEmail({
         to: data.clientEmail,
         subject: `🔧 ${data.mechanicName} ha iniciado el servicio`,
         html,
       });
 
+      console.log("[NotificationService] EN_PROCESO email sent successfully");
       return true;
     } catch (error) {
       console.error("[NotificationService] Error sending service in progress email:", error);
@@ -341,20 +344,27 @@ export class NotificationService {
       serviceRequestId: string;
     }
   ): Promise<boolean> {
+    console.log(`[NotificationService] notifyStatusChange called with status: ${newStatus}`);
+    
     switch (newStatus) {
       case "ACEPTADO":
+        console.log("[NotificationService] Routing to notifyServiceAccepted");
         return this.notifyServiceAccepted(data);
       
       case "EN_CAMINO":
+        console.log("[NotificationService] Routing to notifyMechanicOnWay");
         return this.notifyMechanicOnWay(data);
       
       case "EN_PROCESO":
+        console.log("[NotificationService] Routing to notifyServiceInProgress");
         return this.notifyServiceInProgress(data);
       
       case "FINALIZADO":
+        console.log("[NotificationService] Routing to notifyServiceCompleted");
         return this.notifyServiceCompleted(data);
       
       case "CANCELADO":
+        console.log("[NotificationService] Routing to notifyServiceCanceled");
         // Notificar al cliente sobre la cancelación
         return this.notifyServiceCanceled({
           recipientEmail: data.clientEmail,
@@ -365,6 +375,7 @@ export class NotificationService {
         });
       
       default:
+        console.log(`[NotificationService] No notification handler for status: ${newStatus}`);
         // Para otros estados no enviamos email
         return false;
     }
