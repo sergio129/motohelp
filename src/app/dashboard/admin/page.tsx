@@ -253,21 +253,46 @@ export default function AdminDashboard() {
 
         <section className="grid gap-4">
           <h2 className="text-xl font-semibold text-white">Usuarios registrados</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {users?.map((user) => (
-            <Card key={user.id} className="border-white/10 bg-white/5 text-white">
-              <CardHeader>
-                <CardTitle className="text-white">{user.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm text-slate-200">
-                <p>{user.email}</p>
-                <p>Rol: {user.role}</p>
-                <p>Teléfono: {user.phone ?? "Sin registrar"}</p>
+          {users && users.length > 0 ? (
+            <Card className="border-white/10 bg-white/5 text-white overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-base">
+                  <thead className="border-b border-white/10 bg-white/5">
+                    <tr>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Nombre</th>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Email</th>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Rol</th>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Teléfono</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-medium text-white">{user.name}</td>
+                        <td className="px-6 py-4 text-slate-300">{user.email}</td>
+                        <td className="px-6 py-4 text-slate-300">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                            user.role === "ADMIN" ? "bg-red-500/20 text-red-300" :
+                            user.role === "MECHANIC" ? "bg-blue-500/20 text-blue-300" :
+                            "bg-green-500/20 text-green-300"
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-300">{user.phone ?? "Sin registrar"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ) : (
+            <Card className="border-white/10 bg-white/5">
+              <CardContent className="py-8 text-center">
+                <p className="text-slate-400">Aún no hay usuarios.</p>
               </CardContent>
             </Card>
-          ))}
-            {!users?.length && <p className="text-slate-400">Aún no hay usuarios.</p>}
-          </div>
+          )}
         </section>
 
         <section className="grid gap-4">
