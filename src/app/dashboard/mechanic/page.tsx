@@ -200,38 +200,60 @@ export default function MechanicDashboard() {
     event.preventDefault();
     setSavingAddress(true);
 
-    await fetch("/api/addresses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        label: addrLabel || undefined,
-        street,
-        city,
-        state,
-        postalCode,
-        country,
-        reference: reference || undefined,
-      }),
-    });
+    try {
+      const res = await fetch("/api/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label: addrLabel || undefined,
+          street,
+          city,
+          state,
+          postalCode,
+          country,
+          reference: reference || undefined,
+        }),
+      });
 
-    setAddrLabel("");
-    setStreet("");
-    setCity("");
-    setState("");
-    setPostalCode("");
-    setCountry("");
-    setReference("");
-    setSavingAddress(false);
-    refreshAddresses();
+      if (res.ok) {
+        setAddrLabel("");
+        setStreet("");
+        setCity("");
+        setState("");
+        setPostalCode("");
+        setCountry("");
+        setReference("");
+        toast.success("✅ Dirección guardada exitosamente");
+        refreshAddresses();
+      } else {
+        const data = await res.json();
+        toast.error(data.message || "Error al guardar dirección");
+      }
+    } catch (error) {
+      toast.error("Error al guardar dirección");
+    } finally {
+      setSavingAddress(false);
+    }
   }
 
   async function handleSetPrimary(id: string) {
-    await fetch("/api/addresses", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    refreshAddresses();
+    try {
+      const res = await fetch("/api/addresses", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      
+      if (res.ok) {
+        toast.success("✅ Dirección principal actualizada");
+        refreshAddresses();
+      } else {
+        const data = await res.json();
+        toast.error(data.message || "Error al actualizar dirección");
+      }
+    } catch (error) {
+      toast.error("Error al actualizar dirección");
+    }
   }
 
   function toggleService(id: string) {

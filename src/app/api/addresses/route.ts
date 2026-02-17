@@ -21,8 +21,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
   }
   
-  if (session.user.role !== "CLIENT") {
-    return NextResponse.json({ message: "Solo clientes pueden crear direcciones" }, { status: 403 });
+  if (session.user.role !== "CLIENT" && session.user.role !== "MECHANIC") {
+    return NextResponse.json({ message: "Solo clientes y mecánicos pueden crear direcciones" }, { status: 403 });
   }
 
   try {
@@ -44,8 +44,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });
   }
   
-  if (session.user.role !== "CLIENT") {
-    return NextResponse.json({ message: "Solo clientes pueden modificar direcciones" }, { status: 403 });
+  if (session.user.role !== "CLIENT" && session.user.role !== "MECHANIC") {
+    return NextResponse.json({ message: "Solo clientes y mecánicos pueden modificar direcciones" }, { status: 403 });
   }
 
   try {
