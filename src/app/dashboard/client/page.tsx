@@ -153,7 +153,9 @@ export default function ClientDashboard() {
         setIsRequestOpen(false);
         mutate();
       } else {
-        toast.error("Error al crear solicitud", { id: loadingToast });
+        // Leer el mensaje de error del servidor
+        const errorData = await res.json().catch(() => ({ message: "Error al crear solicitud" }));
+        toast.error(errorData.message || "Error al crear solicitud", { id: loadingToast });
       }
     } catch {
       toast.error("Error al crear solicitud", { id: loadingToast });

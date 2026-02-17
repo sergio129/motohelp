@@ -1,8 +1,12 @@
 # Variables de Entorno para Vercel
 
-## ⚠️ IMPORTANTE: Configurar exactamente estas 3 variables
+## ⚠️ IMPORTANTE: Configurar estas variables obligatorias
 
 Ve a tu proyecto en Vercel → **Settings** → **Environment Variables**
+
+---
+
+## 🔐 Variables de Autenticación
 
 ### 1. DATABASE_URL
 **Valor:**
@@ -22,7 +26,74 @@ https://motohelp-iota.vercel.app
 
 **Environments:** Production
 
-**⚠️ NOTA:** NO incluir `/auth/sign-in` ni ninguna otra ruta, solo el dominio base.
+**⚠️ NOTA:** NO incluir `/auth/sign-in` ni ninguna otra ruta, solo el dominio base.  
+**⚠️ CRÍTICO:** Esta variable es necesaria para que los links en los emails funcionen correctamente.
+
+---
+
+### 3. NEXTAUTH_SECRET
+**Valor:**
+```
+FWobJcidebu6bz8AVU2MjCXYzwfqNUrL6Qcqml1IGmE=
+```
+
+**Environments:** Production, Preview, Development (seleccionar los 3)
+
+---
+
+## 📧 Variables de Email (Sistema de Notificaciones)
+
+### 4. SMTP_HOST
+**Valor:**
+```
+smtp.gmail.com
+```
+
+**Environments:** Production
+
+---
+
+### 5. SMTP_PORT
+**Valor:**
+```
+587
+```
+
+**Environments:** Production
+
+---
+
+### 6. SMTP_USER
+**Valor:**
+```
+sanayaromero62@gmail.com
+```
+
+**Environments:** Production
+
+---
+
+### 7. SMTP_PASSWORD
+**Valor:**
+```
+opercihlnhwqxspb
+```
+
+**Environments:** Production
+
+**⚠️ NOTA:** Esta es una contraseña de aplicación de Gmail, NO la contraseña normal.
+
+---
+
+### 8. ADMIN_EMAIL
+**Valor:**
+```
+admin@motohelp.local
+```
+
+**Environments:** Production
+
+**Descripción:** Email que recibe notificaciones cuando nuevos mecánicos se registran.
 
 ---
 
@@ -68,6 +139,22 @@ FWobJcidebu6bz8AVU2MjCXYzwfqNUrL6Qcqml1IGmE=
 - [ ] DATABASE_URL configurada
 - [ ] NEXTAUTH_URL configurada (sin `/` al final)
 - [ ] NEXTAUTH_SECRET configurada
+- [ ] SMTP_HOST configurada
+- [ ] SMTP_PORT configurada
+- [ ] SMTP_USER configurada
+- [ ] SMTP_PASSWORD configurada (contraseña de aplicación de Gmail)
+- [ ] ADMIN_EMAIL configurada
 - [ ] Redeploy ejecutado
 - [ ] Migraciones aplicadas en la base de datos
 - [ ] Usuario admin creado en la base de datos
+
+---
+
+## 🧪 Prueba de emails:
+
+Después de configurar las variables SMTP y hacer redeploy, puedes probar que funcionen:
+
+1. **Registro de nuevo usuario:** Debería enviar email de bienvenida
+2. **Mecánico acepta solicitud:** Cliente recibe email con detalles
+3. **Servicio completado:** Cliente recibe email para calificar
+4. **Nueva calificación:** Mecánico recibe notificación

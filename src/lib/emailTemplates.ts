@@ -3,6 +3,22 @@
  * Todos los templates usan HTML inline styles para compatibilidad con clientes de email
  */
 
+// Obtener la URL base de la aplicación
+function getBaseUrl(): string {
+  // En producción, usar NEXTAUTH_URL si está definida
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  
+  // En Vercel, usar la URL automática
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Fallback a URL de producción conocida
+  return "https://motohelp-iota.vercel.app";
+}
+
 const baseStyles = `
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
@@ -71,7 +87,7 @@ export function emailMechanicAccepted(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               El mecánico se pondrá en camino pronto. Te notificaremos cuando esté en ruta.
             </p>
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/client" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/client" style="${buttonStyles}">
               Ver mi solicitud
             </a>
             <p style="font-size: 14px; color: #666; margin-top: 30px;">
@@ -121,7 +137,7 @@ export function emailMechanicOnWay(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               Por favor, asegúrate de estar en la ubicación indicada.
             </p>
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/client" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/client" style="${buttonStyles}">
               Ver estado del servicio
             </a>
           </div>
@@ -169,7 +185,7 @@ export function emailServiceCompleted(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               ¡Nos encantaría conocer tu opinión! Por favor, califica este servicio.
             </p>
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/client" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/client" style="${buttonStyles}">
               Calificar servicio ⭐
             </a>
             <p style="font-size: 14px; color: #666; margin-top: 30px;">
@@ -219,7 +235,7 @@ export function emailServiceCanceled(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               ${data.canceledBy === "CLIENT" ? "Has cancelado este servicio." : "El mecánico ha cancelado este servicio."}
             </p>
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/client" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/client" style="${buttonStyles}">
               Ver mis servicios
             </a>
           </div>
@@ -269,7 +285,7 @@ export function emailNewServiceAvailable(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               ¡Date prisa! Las solicitudes se asignan por orden de aceptación.
             </p>
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/mechanic" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/mechanic" style="${buttonStyles}">
               Ver y aceptar solicitud
             </a>
           </div>
@@ -320,7 +336,7 @@ export function emailReceivedRating(data: {
                 <p style="margin: 10px 0 0 0; font-style: italic;">"${data.comment}"</p>
               </div>
             ` : ""}
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/mechanic" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/mechanic" style="${buttonStyles}">
               Ver mi perfil
             </a>
           </div>
@@ -368,7 +384,7 @@ export function emailNewMechanicPending(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               Por favor, revisa su perfil y verifica sus credenciales lo antes posible.
             </p>
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/admin" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/admin" style="${buttonStyles}">
               Ir al panel de admin
             </a>
           </div>
@@ -424,7 +440,7 @@ export function emailWelcome(data: {
                 </ol>
               </div>
             `}
-            <a href="${process.env.NEXTAUTH_URL}/dashboard/${data.userRole.toLowerCase()}" style="${buttonStyles}">
+            <a href="${getBaseUrl()}/dashboard/${data.userRole.toLowerCase()}" style="${buttonStyles}">
               Ir a mi dashboard
             </a>
             <p style="font-size: 14px; color: #666; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
