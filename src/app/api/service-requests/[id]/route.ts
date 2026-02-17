@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { updateServiceStatusSchema } from "@/lib/validations/serviceRequest";
 import { mechanicProfileService } from "@/services/mechanicProfileService";
 import { serviceRequestService } from "@/services/serviceRequestService";
+import { NotificationService } from "@/services/notificationService";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -53,6 +54,19 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
     try {
       const updated = await serviceRequestService.assignMechanic(id, session.user.id);
+      
+      // Enviar notificación al cliente (en background, no bloquear respuesta)
+      if (updated.client?.email && session.user.name && updated.serviceType) {
+        NotificationService.notifyServiceAccepted({
+          clientEmail: updated.client.email,
+          clientName: updated.client.name,
+          mechanicName: session.user.name,
+          serviceName: updated.serviceType.name,
+          address: updated.address,
+          mechanicPhone: profile.user?.phone || undefined,
+        }).catch(err => console.error("Error sending notification:", err));
+      }
+      
       return NextResponse.json(updated);
     } catch (error: any) {
       if (error.message === "NOT_FOUND") {
@@ -93,6 +107,20 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         role: session.user.role as "CLIENT" | "MECHANIC" | "ADMIN",
         userId: session.user.id,
       });
+      
+      // Enviar notificación según el nuevo estado (en background)
+      if (updated.client?.email && updated.mechanic && updated.serviceType) {
+        NotificationService.notifyStatusChange(data.status, {
+          clientEmail: updated.client.email,
+          clientName: updated.client.name,
+          mechanicName: updated.mechanic.name,
+          serviceName: updated.serviceType.name,
+          address: updated.address,
+          notes: updated.notes || undefined,
+          serviceRequestId: updated.id,
+        }).catch(err => console.error("Error sending status notification:", err));
+      }
+      
       return NextResponse.json(updated);
     } catch (error: any) {
       if (error.message === "NOT_FOUND") {

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createReviewSchema } from "@/lib/validations/review";
 import { reviewService } from "@/services/reviewService";
+import { NotificationService } from "@/services/notificationService";
+import { serviceRequestService } from "@/services/serviceRequestService";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -19,6 +21,19 @@ export async function POST(request: Request) {
     const { serviceId, rating, comment } = createReviewSchema.parse(payload);
 
     const review = await reviewService.create(serviceId, rating, comment);
+    
+    // Obtener información del servicio para notificar al mecánico
+    const service = await serviceRequestService.findById(serviceId);
+    if (service?.mechanic?.email && service.serviceType && session.user.name) {
+      NotificationService.notifyRatingReceived({
+        mechanicEmail: service.mechanic.email,
+        mechanicName: service.mechanic.name,
+        clientName: session.user.name,
+        rating,
+        comment: comment || undefined,
+        serviceName: service.serviceType.name,
+      }).catch(err => console.error("Error sending rating notification:", err));
+    }
 
     return NextResponse.json(review, { status: 201 });
   } catch (error: any) {

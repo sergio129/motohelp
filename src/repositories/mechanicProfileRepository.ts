@@ -4,7 +4,10 @@ export const mechanicProfileRepository = {
   findByUserId(userId: string) {
     return prisma.mechanicProfile.findUnique({
       where: { userId },
-      include: { services: { include: { serviceType: true } } },
+      include: { 
+        user: true,
+        services: { include: { serviceType: true } } 
+      },
     });
   },
   upsert(data: {

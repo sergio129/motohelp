@@ -85,6 +85,13 @@ export const serviceRequestRepository = {
     return prisma.serviceRequest.update({
       where: { id },
       data: { status },
+      include: {
+        client: true,
+        mechanic: {
+          include: { mechanicProfile: true },
+        },
+        serviceType: true,
+      },
     });
   },
 
@@ -99,6 +106,13 @@ export const serviceRequestRepository = {
     return prisma.serviceRequest.update({
       where: { id },
       data: { mechanicId, status: "ACEPTADO" },
+      include: {
+        client: true,
+        mechanic: {
+          include: { mechanicProfile: true },
+        },
+        serviceType: true,
+      },
     });
   },
 
