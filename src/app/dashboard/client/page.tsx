@@ -399,15 +399,15 @@ export default function ClientDashboard() {
           {data?.filter((item) => ["FINALIZADO", "CANCELADO"].includes(item.status)).length ? (
             <Card className="border-white/10 bg-white/5 text-white overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-base">
                   <thead className="border-b border-white/10 bg-white/5">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-200">Servicio</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-200">Descripción</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-200">Dirección</th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-200">Estado</th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-200">Calificación</th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-200">Acciones</th>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Servicio</th>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Descripción</th>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Dirección</th>
+                      <th className="px-6 py-4 text-center font-semibold text-slate-200">Estado</th>
+                      <th className="px-6 py-4 text-center font-semibold text-slate-200">Calificación</th>
+                      <th className="px-6 py-4 text-center font-semibold text-slate-200">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -415,26 +415,26 @@ export default function ClientDashboard() {
                       ?.filter((item) => ["FINALIZADO", "CANCELADO"].includes(item.status))
                       .map((item) => (
                       <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-3 font-medium text-white">{item.serviceType?.name ?? "Servicio"}</td>
-                        <td className="px-4 py-3 text-slate-300 max-w-xs truncate">{item.description}</td>
-                        <td className="px-4 py-3 text-slate-300 text-xs max-w-xs truncate">{item.address}</td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-6 py-4 font-medium text-white">{item.serviceType?.name ?? "Servicio"}</td>
+                        <td className="px-6 py-4 text-slate-300">{item.description}</td>
+                        <td className="px-6 py-4 text-slate-300 text-sm">{item.address}</td>
+                        <td className="px-6 py-4 text-center">
                           <span className={statusBadge(item.status)}>{formatStatus(item.status)}</span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-6 py-4 text-center">
                           {item.review ? (
-                            <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded inline-flex items-center gap-1">
+                            <span className="text-sm bg-orange-500/20 text-orange-300 px-3 py-1 rounded inline-flex items-center gap-1">
                               ⭐ {item.review.rating}/5
                             </span>
                           ) : (
-                            <span className="text-xs text-slate-400">-</span>
+                            <span className="text-sm text-slate-400">-</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-6 py-4 text-center">
                           <Button
                             variant="default"
                             size="sm"
-                            className="bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 text-xs"
+                            className="bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 text-sm"
                             onClick={() => setSelectedServiceIdForDetails(item.id)}
                           >
                             Ver detalles
