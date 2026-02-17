@@ -8,7 +8,7 @@ export const registerSchema = z.object({
     .min(8, "Mínimo 8 caracteres")
     .regex(/[A-Z]/, "Debe incluir una mayúscula")
     .regex(/[0-9]/, "Debe incluir un número"),
-  role: z.enum(["CLIENT", "MECHANIC", "ADMIN"]).optional(),
+  role: z.enum(["CLIENT", "MECHANIC"]).optional(),
   phone: z
     .string()
     .min(7)

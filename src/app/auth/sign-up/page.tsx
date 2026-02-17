@@ -8,18 +8,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const roles = [
-  { value: "CLIENT", label: "Cliente" },
-  { value: "MECHANIC", label: "Mecánico" },
-];
-
 export default function SignUpPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("CLIENT");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -31,7 +25,7 @@ export default function SignUpPage() {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, role, phone: phone || undefined }),
+      body: JSON.stringify({ name, email, password, role: "CLIENT", phone: phone || undefined }),
     });
 
     if (!response.ok) {
@@ -83,21 +77,6 @@ export default function SignUpPage() {
                 onChange={(event) => setPhone(event.target.value)}
                 className="border-white/10 bg-slate-900/60 text-white placeholder:text-slate-500"
               />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-200" htmlFor="role">Rol</Label>
-              <select
-                id="role"
-                value={role}
-                onChange={(event) => setRole(event.target.value)}
-                className="flex h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white"
-              >
-                {roles.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-200" htmlFor="password">Contraseña</Label>

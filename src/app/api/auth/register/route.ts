@@ -8,6 +8,12 @@ export async function POST(request: Request) {
     const payload = await request.json();
     const data = registerSchema.parse(payload);
 
+    // Si no viene un rol específico (signup pública), default a CLIENT
+    if (!data.role || data.role === "CLIENT") {
+      data.role = "CLIENT";
+    }
+    // Si viene MECHANIC, se permite (para admin panel)
+
     const user = await authService.registerUser(data);
     
     // Enviar email de bienvenida (en background)
