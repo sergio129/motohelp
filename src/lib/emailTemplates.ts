@@ -148,6 +148,51 @@ export function emailMechanicOnWay(data: {
 }
 
 /**
+ * Email cuando mecánico inicia el servicio
+ */
+export function emailServiceInProgress(data: {
+  clientName: string;
+  mechanicName: string;
+  serviceName: string;
+  address: string;
+}) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="${baseStyles}">
+        <div style="${containerStyles}">
+          <div style="${headerStyles}">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🔧 ¡Servicio iniciado!</h1>
+          </div>
+          <div style="padding: 30px 20px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              Hola <strong>${data.clientName}</strong>,
+            </p>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              <strong>${data.mechanicName}</strong> ha iniciado el servicio de <strong>${data.serviceName}</strong>.
+            </p>
+            <div style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>🔧 Estado:</strong> En proceso</p>
+              <p style="margin: 5px 0;"><strong>📍 Ubicación:</strong> ${data.address}</p>
+            </div>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              El mecánico está trabajando en tu motocicleta en este momento. Te notificaremos cuando el servicio esté completo.
+            </p>
+            <a href="${getBaseUrl()}/dashboard/client" style="${buttonStyles}">
+              Ver estado en vivo
+            </a>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
  * Email cuando servicio finaliza
  */
 export function emailServiceCompleted(data: {

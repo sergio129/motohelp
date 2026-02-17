@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/email";
 import {
   emailMechanicAccepted,
   emailMechanicOnWay,
+  emailServiceInProgress,
   emailServiceCompleted,
   emailServiceCanceled,
   emailNewServiceAvailable,
@@ -33,6 +34,14 @@ interface ServiceOnWayData {
   serviceName: string;
   address: string;
   estimatedTime?: string;
+}
+
+interface ServiceInProgressData {
+  clientEmail: string;
+  clientName: string;
+  mechanicName: string;
+  serviceName: string;
+  address: string;
 }
 
 interface ServiceCompletedData {
@@ -135,6 +144,31 @@ export class NotificationService {
       return true;
     } catch (error) {
       console.error("[NotificationService] Error sending mechanic on way email:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Notifica al cliente que el mecánico ha iniciado el servicio
+   */
+  static async notifyServiceInProgress(data: ServiceInProgressData): Promise<boolean> {
+    try {
+      const html = emailServiceInProgress({
+        clientName: data.clientName,
+        mechanicName: data.mechanicName,
+        serviceName: data.serviceName,
+        address: data.address,
+      });
+
+      await sendEmail({
+        to: data.clientEmail,
+        subject: `🔧 ${data.mechanicName} ha iniciado el servicio`,
+        html,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("[NotificationService] Error sending service in progress email:", error);
       return false;
     }
   }
@@ -314,8 +348,21 @@ export class NotificationService {
       case "EN_CAMINO":
         return this.notifyMechanicOnWay(data);
       
+      case "EN_PROCESO":
+        return this.notifyServiceInProgress(data);
+      
       case "FINALIZADO":
         return this.notifyServiceCompleted(data);
+      
+      case "CANCELADO":
+        // Notificar al cliente sobre la cancelación
+        return this.notifyServiceCanceled({
+          recipientEmail: data.clientEmail,
+          userName: data.clientName,
+          serviceName: data.serviceName,
+          canceledBy: "MECHANIC", // Por defecto asumimos que fue el mecánico
+          reason: data.notes,
+        });
       
       default:
         // Para otros estados no enviamos email
