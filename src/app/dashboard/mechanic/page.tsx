@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { signOut } from "next-auth/react";
 import toast from "react-hot-toast";
 import { fetcher } from "@/lib/fetcher";
+import { formatStatus } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -343,7 +344,7 @@ export default function MechanicDashboard() {
                 <CardContent className="space-y-3 text-sm text-slate-200">
                   <p>{item.description}</p>
                   <p>Dirección: {item.address}</p>
-                  <span className={statusBadge(item.status)}>{item.status}</span>
+                  <span className={statusBadge(item.status)}>{formatStatus(item.status)}</span>
                   <div className="flex flex-wrap gap-2">
                     {item.status === "ACEPTADO" && (
                       <Button size="sm" className="bg-orange-500 text-slate-950 hover:bg-orange-400" onClick={() => handleStatus(item.id, "EN_CAMINO")}>

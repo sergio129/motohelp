@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { signOut } from "next-auth/react";
 import toast from "react-hot-toast";
 import { fetcher } from "@/lib/fetcher";
+import { formatStatus } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -378,7 +379,7 @@ export default function ClientDashboard() {
                   
                   {/* Estado y calificación */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className={statusBadge(item.status)}>{item.status}</span>
+                    <span className={statusBadge(item.status)}>{formatStatus(item.status)}</span>
                     {item.review && (
                       <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded">
                         ⭐ {item.review.rating}
@@ -858,7 +859,7 @@ export default function ClientDashboard() {
                     </div>
                     <div>
                       <p className="text-xs text-slate-400">Estado</p>
-                      <p className={statusBadge(selectedServiceDetails?.status || "PENDIENTE")}>{selectedServiceDetails?.status}</p>
+                      <p className={statusBadge(selectedServiceDetails?.status || "PENDIENTE")}>{formatStatus(selectedServiceDetails?.status || "PENDIENTE")}</p>
                     </div>
                     {selectedServiceDetails?.notes && (
                       <div>
@@ -927,7 +928,7 @@ export default function ClientDashboard() {
                             )}
                           </div>
                           <div className="flex-1 pb-4 pt-1">
-                            <p className="text-xs font-semibold text-orange-300">{entry.newStatus}</p>
+                            <p className="text-xs font-semibold text-orange-300">{formatStatus(entry.newStatus)}</p>
                             <p className="text-xs text-slate-400">
                               {new Date(entry.changedAt).toLocaleString("es-ES")}
                             </p>
