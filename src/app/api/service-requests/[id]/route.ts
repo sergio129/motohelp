@@ -71,6 +71,44 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     }
   }
 
+  // Si hay status en el payload, procesar cambio de estado
+  // (las notas se guardan junto con el estado si se proporcionan)
+  if (payload.status) {
+    // Si además hay notas para guardar, guardarlas primero
+    if (payload.notes !== undefined && payload.notes !== "" && session.user.role === "MECHANIC") {
+      try {
+        await serviceRequestService.updateNotes(id, payload.notes, session.user.id);
+      } catch (error: any) {
+        // Si falla actualizar notas, continuar con el cambio de estado
+        console.error("Error ao actualizar notas:", error);
+      }
+    }
+
+    // Ahora procesar el cambio de estado
+    const data = updateServiceStatusSchema.parse(payload);
+    try {
+      const updated = await serviceRequestService.updateStatusForRole({
+        id,
+        status: data.status,
+        role: session.user.role as "CLIENT" | "MECHANIC" | "ADMIN",
+        userId: session.user.id,
+      });
+      return NextResponse.json(updated);
+    } catch (error: any) {
+      if (error.message === "NOT_FOUND") {
+        return NextResponse.json({ message: "Solicitud no encontrada" }, { status: 404 });
+      }
+      if (error.message === "INVALID_STATUS") {
+        return NextResponse.json({ message: "Transición no permitida" }, { status: 400 });
+      }
+      if (error.message === "FORBIDDEN") {
+        return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+      }
+      return NextResponse.json({ message: "Error al actualizar" }, { status: 500 });
+    }
+  }
+
+  // Si solo hay notas (sin cambio de estado)
   if (payload.notes !== undefined && session.user.role === "MECHANIC") {
     try {
       await serviceRequestService.updateNotes(id, payload.notes, session.user.id);
@@ -86,26 +124,5 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     }
   }
 
-  const data = updateServiceStatusSchema.parse(payload);
-
-  try {
-    const updated = await serviceRequestService.updateStatusForRole({
-      id,
-      status: data.status,
-      role: session.user.role as "CLIENT" | "MECHANIC" | "ADMIN",
-      userId: session.user.id,
-    });
-    return NextResponse.json(updated);
-  } catch (error: any) {
-    if (error.message === "NOT_FOUND") {
-      return NextResponse.json({ message: "Solicitud no encontrada" }, { status: 404 });
-    }
-    if (error.message === "INVALID_STATUS") {
-      return NextResponse.json({ message: "Transición no permitida" }, { status: 400 });
-    }
-    if (error.message === "FORBIDDEN") {
-      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-    }
-    return NextResponse.json({ message: "Error al actualizar" }, { status: 500 });
-  }
+  return NextResponse.json({ message: "Solicitud inválida" }, { status: 400 });
 }

@@ -712,14 +712,25 @@ export default function MechanicDashboard() {
                   type="button"
                   className="flex-1 bg-orange-500 text-slate-950 hover:bg-orange-400"
                   onClick={async () => {
-                    await fetch(`/api/service-requests/${selectedServiceIdForNotes}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ action: "updateStatus", status: "FINALIZADO", notes }),
-                    });
-                    refreshAssigned();
-                    setSelectedServiceIdForNotes(null);
-                    setNotes("");
+                    const loadingToast = toast.loading("Finalizando servicio...");
+                    try {
+                      const res = await fetch(`/api/service-requests/${selectedServiceIdForNotes}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ status: "FINALIZADO", notes }),
+                      });
+                      if (res.ok) {
+                        toast.success("✅ Servicio finalizado exitosamente", { id: loadingToast });
+                        refreshAssigned();
+                        setSelectedServiceIdForNotes(null);
+                        setNotes("");
+                      } else {
+                        const data = await res.json();
+                        toast.error(data.message || "Error al finalizar", { id: loadingToast });
+                      }
+                    } catch (error) {
+                      toast.error("Error al finalizar servicio", { id: loadingToast });
+                    }
                   }}
                 >
                   Finalizar y guardar
