@@ -381,6 +381,17 @@ export default function MechanicDashboard() {
 
         <section className="grid gap-4">
           <h2 className="text-xl font-semibold text-white">Solicitudes disponibles</h2>
+          
+          {!profile?.verified && (
+            <Card className="border-orange-500/30 bg-orange-500/10">
+              <CardContent className="pt-6">
+                <p className="text-sm text-orange-200">
+                  ⏳ <strong>Tu perfil está pendiente de verificación.</strong> El administrador debe aprobar tu perfil profesional antes de que puedas ver y aceptar solicitudes de servicio.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             {available?.map((item) => (
             <Card key={item.id} className="border-white/10 bg-white/5 text-white">
@@ -396,7 +407,8 @@ export default function MechanicDashboard() {
               </CardContent>
             </Card>
           ))}
-            {!available?.length && <p className="text-slate-400">No hay solicitudes pendientes.</p>}
+            {!available?.length && !profile?.verified && <p className="text-slate-400">No hay solicitudes disponibles mientras tu perfil está en verificación.</p>}
+            {!available?.length && profile?.verified && <p className="text-slate-400">No hay solicitudes pendientes.</p>}
           </div>
         </section>
       </div>

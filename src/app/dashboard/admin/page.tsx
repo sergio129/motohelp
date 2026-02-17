@@ -54,8 +54,12 @@ type AdminStats = {
 
 export default function AdminDashboard() {
   const { data: users } = useSWR<User[]>("/api/users", fetcher);
-  const { data: mechanics, mutate: refreshMechanics } = useSWR<MechanicProfile[]>(
+  const { data: allMechanics, mutate: refreshAllMechanics } = useSWR<MechanicProfile[]>(
     "/api/admin/mechanics",
+    fetcher
+  );
+  const { data: unverifiedMechanics, mutate: refreshUnverified } = useSWR<MechanicProfile[]>(
+    "/api/admin/mechanics/unverified",
     fetcher
   );
   const { data: requests, mutate: refreshRequests } = useSWR<ServiceRequest[]>(
@@ -78,7 +82,8 @@ export default function AdminDashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, verified }),
     });
-    refreshMechanics();
+    refreshAllMechanics();
+    refreshUnverified();
   }
 
   async function handleStatus(id: string, status: string) {
@@ -217,7 +222,28 @@ export default function AdminDashboard() {
         </section>
 
         <section className="grid gap-4">
-          <h2 className="text-xl font-semibold text-white">Tipos de servicio</h2>
+          <Card className="border-blue-500/30 bg-blue-500/10">
+            <CardHeader>
+              <CardTitle className="text-blue-300">ℹ️ Información para mecánicos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-200">
+              <p><strong>Campos obligatorios para crear perfil de mecánico:</strong></p>
+              <ul className="ml-4 space-y-1">
+                <li>✓ <strong>Nombre completo</strong> (mín. 2 caracteres)</li>
+                <li>✓ <strong>Años de experiencia</strong> (0-60 años)</li>
+                <li>✓ <strong>Especialidad</strong> (ej: "Mecánica general", "Frenos", etc.)</li>
+                <li>✓ <strong>Seleccionar al menos 1 servicio</strong> que puede realizar</li>
+                <li>○ Teléfono (opcional, mín. 7 caracteres)</li>
+                <li>○ Documento (opcional, PDF o imagen)</li>
+              </ul>
+              <p className="mt-3 border-t border-blue-500/20 pt-2 text-xs">
+                <strong>Nota:</strong> Los mecánicos sin verificar NO tendrán servicios activos visibles hasta que el administrador los apruebe.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-4">
           <Card className="border-white/10 bg-white/5 text-white">
             <CardHeader>
               <CardTitle className="text-white">Agregar nuevo tipo</CardTitle>
@@ -292,42 +318,84 @@ export default function AdminDashboard() {
 
         <section className="grid gap-4">
           <h2 className="text-xl font-semibold text-white">Verificación de mecánicos</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {mechanics?.map((profile) => (
-              <Card key={profile.userId} className="border-white/10 bg-white/5 text-white">
-                <CardHeader>
-                  <CardTitle className="text-white">{profile.user.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-slate-200">
-                  <p>{profile.user.email}</p>
-                  <p>Especialidad: {profile.specialty}</p>
-                  <p>Años experiencia: {profile.experienceYears}</p>
-                  <div className="flex items-center gap-3">
-                    <span className={statusBadge(profile.verified ? "FINALIZADO" : "PENDIENTE")}>
-                      {profile.verified ? "Verificado" : "Pendiente"}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className={
-                        profile.verified
-                          ? "bg-white/10 text-white hover:bg-white/20"
-                          : "bg-orange-500 text-slate-950 hover:bg-orange-400"
-                      }
-                      onClick={() => handleVerify(profile.userId, !profile.verified)}
-                    >
-                      {profile.verified ? "Desverificar" : "Aprobar"}
-                    </Button>
-                    {profile.documentUrl && (
-                      <a className="text-xs underline text-slate-200" href={profile.documentUrl} target="_blank">
-                        Ver documento
-                      </a>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {!mechanics?.length && <p className="text-slate-400">No hay perfiles de mecánicos aún.</p>}
+          
+          {/* Pendientes por aprobar */}
+          <div>
+            <h3 className="mb-3 text-lg font-medium text-orange-300">
+              ⏳ Pendientes por aprobar ({unverifiedMechanics?.filter(m => !m.verified).length || 0})
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              {unverifiedMechanics?.filter(m => !m.verified).map((profile) => (
+                <Card key={profile.userId} className="border-orange-500/20 bg-orange-500/10 text-white">
+                  <CardHeader>
+                    <CardTitle className="text-white">{profile.user.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-slate-200">
+                    <p>Email: {profile.user.email}</p>
+                    <p>Especialidad: {profile.specialty}</p>
+                    <p>Años experiencia: {profile.experienceYears}</p>
+                    <p>Teléfono: {profile.user.phone ?? "No registrado"}</p>
+                    <div className="flex items-center gap-3 pt-2">
+                      <span className="inline-flex rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-semibold text-yellow-200">
+                        Pendiente
+                      </span>
+                      <Button
+                        size="sm"
+                        className="bg-orange-500 text-slate-950 hover:bg-orange-400"
+                        onClick={() => handleVerify(profile.userId, true)}
+                      >
+                        Aprobar
+                      </Button>
+                      {profile.documentUrl && (
+                        <a className="text-xs underline text-slate-200" href={profile.documentUrl} target="_blank" rel="noreferrer">
+                          Ver doc
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {!unverifiedMechanics?.filter(m => !m.verified).length && (
+                <p className="text-slate-400">✅ No hay perfiles pendientes de aprobación.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Verificados */}
+          <div>
+            <h3 className="mb-3 text-lg font-medium text-green-300">
+              ✅ Mecánicos verificados ({allMechanics?.filter(m => m.verified).length || 0})
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              {allMechanics?.filter(m => m.verified).map((profile) => (
+                <Card key={profile.userId} className="border-green-500/20 bg-green-500/10 text-white">
+                  <CardHeader>
+                    <CardTitle className="text-white">{profile.user.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-slate-200">
+                    <p>Email: {profile.user.email}</p>
+                    <p>Especialidad: {profile.specialty}</p>
+                    <p>Años experiencia: {profile.experienceYears}</p>
+                    <div className="flex items-center gap-3 pt-2">
+                      <span className="inline-flex rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-200">
+                        Verificado
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="bg-white/10 text-white hover:bg-white/20"
+                        onClick={() => handleVerify(profile.userId, false)}
+                      >
+                        Desverificar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {!allMechanics?.filter(m => m.verified).length && (
+                <p className="text-slate-400">No hay mecánicos verificados aún.</p>
+              )}
+            </div>
           </div>
         </section>
 

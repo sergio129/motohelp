@@ -16,11 +16,23 @@ export async function GET(request: Request) {
   const scope = new URL(request.url).searchParams.get("scope");
 
   if (session.user.role === "MECHANIC") {
+    // Verificar que el mecánico esté verificado
+    const profile = await mechanicProfileService.getByUserId(session.user.id);
+    if (!profile) {
+      return NextResponse.json([]);
+    }
+
+    if (!profile.verified) {
+      // Retornar array vacío si no está verificado
+      // El dashboard mostrará un mensaje apropiado
+      return NextResponse.json([]);
+    }
+
     if (scope === "assigned") {
       const requests = await serviceRequestService.listAssignedToMechanic(session.user.id);
       return NextResponse.json(requests);
     }
-    const profile = await mechanicProfileService.getByUserId(session.user.id);
+
     const allowedServiceIds = profile?.services?.map((service) => service.serviceTypeId) ?? [];
     if (!allowedServiceIds.length) {
       return NextResponse.json([]);
