@@ -87,6 +87,7 @@ export default function ClientDashboard() {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [selectedServiceIdForRating, setSelectedServiceIdForRating] = useState<string | null>(null);
   const [selectedServiceIdForDetails, setSelectedServiceIdForDetails] = useState<string | null>(null);
+  const [profileTab, setProfileTab] = useState<"personal" | "addresses">("personal");
 
   // SWR Hooks
   const { data, mutate } = useSWR<ServiceRequest[]>("/api/service-requests", fetcher);
@@ -165,24 +166,70 @@ export default function ClientDashboard() {
   async function handleSaveProfile(event: React.FormEvent) {
     event.preventDefault();
     setSavingProfile(true);
+    const loadingToast = toast.loading("Guardando información...");
 
-    await fetch("/api/profile/client", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        phone: phone || undefined,
-        documentId: documentId || undefined,
-        motoBrand: motoBrand || undefined,
-        motoModel: motoModel || undefined,
-        motoYear: motoYear ? Number(motoYear) : undefined,
-        motoPlate: motoPlate || undefined,
-        motoColor: motoColor || undefined,
-      }),
-    });
+    try {
+      // Guardar datos personales
+      const personalRes = await fetch("/api/profile/client", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone: phone || undefined,
+          documentId: documentId || undefined,
+          motoBrand: motoBrand || undefined,
+          motoModel: motoModel || undefined,
+          motoYear: motoYear ? Number(motoYear) : undefined,
+          motoPlate: motoPlate || undefined,
+          motoColor: motoColor || undefined,
+        }),
+      });
 
-    setSavingProfile(false);
-    refreshProfile();
+      if (!personalRes.ok) {
+        const error = await personalRes.json();
+        throw new Error(error.message || "Error al guardar datos personales");
+      }
+
+      // Guardar dirección si hay datos
+      if (street && city && state && postalCode && country) {
+        const addressRes = await fetch("/api/addresses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label: addrLabel || undefined,
+            street,
+            city,
+            state,
+            postalCode,
+            country,
+            reference: reference || undefined,
+          }),
+        });
+
+        if (!addressRes.ok) {
+          const error = await addressRes.json();
+          throw new Error(error.message || "Error al guardar dirección");
+        }
+
+        setAddrLabel("");
+        setStreet("");
+        setCity("");
+        setState("");
+        setPostalCode("");
+        setCountry("");
+        setReference("");
+      }
+
+      toast.success("✅ Información guardada exitosamente", { id: loadingToast });
+      refreshProfile();
+      refreshAddresses();
+      setIsProfileOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error al guardar";
+      toast.error(message, { id: loadingToast });
+    } finally {
+      setSavingProfile(false);
+    }
   }
 
   async function handleAddAddress(event: React.FormEvent) {
@@ -458,229 +505,264 @@ export default function ClientDashboard() {
 
       {isProfileOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
-            <div className="max-h-[90vh] overflow-y-auto p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold">Editar perfil</h2>
-                <p className="text-sm text-slate-400">Actualiza tus datos y direcciones.</p>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 sm:px-6 py-4">
+                <div>
+                  <h2 className="text-xl font-semibold">Editar perfil</h2>
+                  <p className="text-sm text-slate-400">Actualiza tu información personal y direcciones</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => setIsProfileOpen(false)}
+                >
+                  Cerrar
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="default"
-                className="bg-white/10 text-white hover:bg-white/20"
-                onClick={() => setIsProfileOpen(false)}
-              >
-                Cerrar
-              </Button>
-            </div>
 
-            <div className="mt-6 grid gap-6">
-              <Card className="border-white/10 bg-white/5 text-white">
-                <CardHeader>
-                  <CardTitle className="text-white">Datos personales</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSaveProfile}>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="name">Nombre completo</Label>
-                      <Input
-                        id="name"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="phone">Teléfono</Label>
-                      <Input
-                        id="phone"
-                        value={phone}
-                        onChange={(event) => setPhone(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="documentId">Documento</Label>
-                      <Input
-                        id="documentId"
-                        value={documentId}
-                        onChange={(event) => setDocumentId(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="motoBrand">Marca</Label>
-                      <Input
-                        id="motoBrand"
-                        value={motoBrand}
-                        onChange={(event) => setMotoBrand(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="motoModel">Modelo</Label>
-                      <Input
-                        id="motoModel"
-                        value={motoModel}
-                        onChange={(event) => setMotoModel(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="motoYear">Año</Label>
-                      <Input
-                        id="motoYear"
-                        type="number"
-                        value={motoYear}
-                        onChange={(event) => setMotoYear(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="motoPlate">Placa</Label>
-                      <Input
-                        id="motoPlate"
-                        value={motoPlate}
-                        onChange={(event) => setMotoPlate(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="motoColor">Color</Label>
-                      <Input
-                        id="motoColor"
-                        value={motoColor}
-                        onChange={(event) => setMotoColor(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={savingProfile}
-                      className="bg-orange-500 text-slate-950 hover:bg-orange-400 md:col-span-2"
-                    >
-                      {savingProfile ? "Guardando..." : "Guardar datos"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+              {/* Tabs */}
+              <div className="flex border-b border-white/10 px-5 sm:px-6">
+                <button
+                  onClick={() => setProfileTab("personal")}
+                  className={`px-4 py-3 text-sm font-medium transition-colors ${
+                    profileTab === "personal"
+                      ? "border-b-2 border-orange-500 text-white"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Información Personal
+                </button>
+                <button
+                  onClick={() => setProfileTab("addresses")}
+                  className={`px-4 py-3 text-sm font-medium transition-colors ${
+                    profileTab === "addresses"
+                      ? "border-b-2 border-orange-500 text-white"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Direcciones
+                </button>
+              </div>
 
-              <Card className="border-white/10 bg-white/5 text-white">
-                <CardHeader>
-                  <CardTitle className="text-white">Direcciones</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <form className="grid gap-4 md:grid-cols-2" onSubmit={handleAddAddress}>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="addrLabel">Etiqueta</Label>
-                      <Input
-                        id="addrLabel"
-                        value={addrLabel}
-                        onChange={(event) => setAddrLabel(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                        placeholder="Casa / Trabajo"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="street">Calle</Label>
-                      <Input
-                        id="street"
-                        value={street}
-                        onChange={(event) => setStreet(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="city">Ciudad</Label>
-                      <Input
-                        id="city"
-                        value={city}
-                        onChange={(event) => setCity(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="state">Estado</Label>
-                      <Input
-                        id="state"
-                        value={state}
-                        onChange={(event) => setState(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="postal">Código postal</Label>
-                      <Input
-                        id="postal"
-                        value={postalCode}
-                        onChange={(event) => setPostalCode(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-200" htmlFor="country">País</Label>
-                      <Input
-                        id="country"
-                        value={country}
-                        onChange={(event) => setCountry(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label className="text-slate-200" htmlFor="reference">Referencia</Label>
-                      <Input
-                        id="reference"
-                        value={reference}
-                        onChange={(event) => setReference(event.target.value)}
-                        className="border-white/10 bg-slate-900/60 text-white"
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={savingAddress}
-                      className="bg-white/10 text-white hover:bg-white/20 md:col-span-2"
-                    >
-                      {savingAddress ? "Guardando..." : "Agregar dirección"}
-                    </Button>
-                  </form>
+              {/* Content - Scrolleablo */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-5 sm:p-6">
+                  {profileTab === "personal" && (
+                    <form className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="name">Nombre completo</Label>
+                        <Input
+                          id="name"
+                          value={name}
+                          onChange={(event) => setName(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="phone">Teléfono</Label>
+                        <Input
+                          id="phone"
+                          value={phone}
+                          onChange={(event) => setPhone(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="documentId">Documento</Label>
+                        <Input
+                          id="documentId"
+                          value={documentId}
+                          onChange={(event) => setDocumentId(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="motoBrand">Marca</Label>
+                        <Input
+                          id="motoBrand"
+                          value={motoBrand}
+                          onChange={(event) => setMotoBrand(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="motoModel">Modelo</Label>
+                        <Input
+                          id="motoModel"
+                          value={motoModel}
+                          onChange={(event) => setMotoModel(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="motoYear">Año</Label>
+                        <Input
+                          id="motoYear"
+                          type="number"
+                          value={motoYear}
+                          onChange={(event) => setMotoYear(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="motoPlate">Placa</Label>
+                        <Input
+                          id="motoPlate"
+                          value={motoPlate}
+                          onChange={(event) => setMotoPlate(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-200" htmlFor="motoColor">Color</Label>
+                        <Input
+                          id="motoColor"
+                          value={motoColor}
+                          onChange={(event) => setMotoColor(event.target.value)}
+                          className="border-white/10 bg-slate-900/60 text-white"
+                        />
+                      </div>
+                    </form>
+                  )}
 
-                  <div className="grid gap-3">
-                    {addresses?.map((item) => (
-                      <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/40 p-3 text-sm text-slate-200">
-                        <div>
-                          <p className="font-semibold text-white">{item.label ?? "Dirección"}</p>
-                          <p>{formatAddress(item)}</p>
-                          {item.reference && <p className="text-xs text-slate-400">{item.reference}</p>}
+                  {profileTab === "addresses" && (
+                    <div className="space-y-4">
+                      <div className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                        <p className="text-sm text-blue-200">
+                          <strong>Agregar nueva dirección:</strong> Completa los datos y se agregará a tu lista de direcciones.
+                        </p>
+                      </div>
+
+                      <form className="grid gap-4 md:grid-cols-2 bg-slate-900/40 rounded-lg p-4 border border-white/10">
+                        <div className="space-y-2">
+                          <Label className="text-slate-200" htmlFor="addrLabel">Etiqueta</Label>
+                          <Input
+                            id="addrLabel"
+                            value={addrLabel}
+                            onChange={(event) => setAddrLabel(event.target.value)}
+                            className="border-white/10 bg-slate-900/60 text-white"
+                            placeholder="Casa / Trabajo"
+                          />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={item.isPrimary ? "rounded-full bg-orange-500/20 px-3 py-1 text-xs text-orange-200" : "rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200"}>
-                            {item.isPrimary ? "Principal" : "Secundaria"}
-                          </span>
-                          {!item.isPrimary && (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="bg-white/10 text-white hover:bg-white/20"
-                              onClick={() => handleSetPrimary(item.id)}
-                            >
-                              Hacer principal
-                            </Button>
-                          )}
+                        <div className="space-y-2">
+                          <Label className="text-slate-200" htmlFor="street">Calle</Label>
+                          <Input
+                            id="street"
+                            value={street}
+                            onChange={(event) => setStreet(event.target.value)}
+                            className="border-white/10 bg-slate-900/60 text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-slate-200" htmlFor="city">Ciudad</Label>
+                          <Input
+                            id="city"
+                            value={city}
+                            onChange={(event) => setCity(event.target.value)}
+                            className="border-white/10 bg-slate-900/60 text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-slate-200" htmlFor="state">Estado</Label>
+                          <Input
+                            id="state"
+                            value={state}
+                            onChange={(event) => setState(event.target.value)}
+                            className="border-white/10 bg-slate-900/60 text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-slate-200" htmlFor="postal">Código postal</Label>
+                          <Input
+                            id="postal"
+                            value={postalCode}
+                            onChange={(event) => setPostalCode(event.target.value)}
+                            className="border-white/10 bg-slate-900/60 text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-slate-200" htmlFor="country">País</Label>
+                          <Input
+                            id="country"
+                            value={country}
+                            onChange={(event) => setCountry(event.target.value)}
+                            className="border-white/10 bg-slate-900/60 text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label className="text-slate-200" htmlFor="reference">Referencia</Label>
+                          <Input
+                            id="reference"
+                            value={reference}
+                            onChange={(event) => setReference(event.target.value)}
+                            className="border-white/10 bg-slate-900/60 text-white"
+                          />
+                        </div>
+                      </form>
+
+                      <div className="mt-6">
+                        <h3 className="text-sm font-semibold text-white mb-3">Tus direcciones guardadas</h3>
+                        <div className="grid gap-3">
+                          {addresses?.map((item) => (
+                            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/40 p-3 text-sm text-slate-200">
+                              <div>
+                                <p className="font-semibold text-white">{item.label ?? "Dirección"}</p>
+                                <p>{formatAddress(item)}</p>
+                                {item.reference && <p className="text-xs text-slate-400">{item.reference}</p>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={item.isPrimary ? "rounded-full bg-orange-500/20 px-3 py-1 text-xs text-orange-200" : "rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200"}>
+                                  {item.isPrimary ? "Principal" : "Secundaria"}
+                                </span>
+                                {!item.isPrimary && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    className="bg-white/10 text-white hover:bg-white/20"
+                                    onClick={() => handleSetPrimary(item.id)}
+                                  >
+                                    Hacer principal
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {!addresses?.length && <p className="text-slate-400">Aún no tienes direcciones guardadas.</p>}
                         </div>
                       </div>
-                    ))}
-                    {!addresses?.length && <p className="text-slate-400">Aún no tienes direcciones guardadas.</p>}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer con botones */}
+              <div className="border-t border-white/10 px-5 sm:px-6 py-4 flex gap-3 justify-end">
+                <Button
+                  type="button"
+                  variant="default"
+                  className="bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => setIsProfileOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                  className="bg-orange-500 text-slate-950 hover:bg-orange-400 disabled:opacity-50"
+                >
+                  {savingProfile ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
