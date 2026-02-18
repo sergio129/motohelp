@@ -167,3 +167,16 @@ model PasswordResetToken {
 
   @@index([userId])
 }
+
+model TermsAcceptance {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  termsVersion          String   @default("1.0")
+  acceptedTermsAt       DateTime
+  acceptedPrivacyAt     DateTime?
+  acceptedCookiesAt     DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+}
