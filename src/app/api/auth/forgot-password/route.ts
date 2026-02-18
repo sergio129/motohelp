@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { setCORSHeaders, handleCORSPreflight } from "@/lib/cors";
 import crypto from "crypto";
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCORSPreflight(request);
+}
 
 export async function POST(request: NextRequest) {
   // Rate limiting: 3 solicitudes de recuperación por hora
@@ -53,15 +58,17 @@ export async function POST(request: NextRequest) {
     // Enviar email
     await sendPasswordResetEmail(user.email, user.name, resetUrl);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { message: "Si el email existe, recibirás instrucciones" },
       { status: 200 }
     );
+    return setCORSHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error en forgot-password:", error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: "Error al procesar la solicitud" },
       { status: 500 }
     );
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 }

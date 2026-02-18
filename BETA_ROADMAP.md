@@ -2,7 +2,7 @@
 
 > **Fecha de creación:** 17 de febrero de 2026  
 > **Última actualización:** 18 de febrero de 2026  
-> **Estado actual:** En desarrollo Beta (Checklist técnico en progreso - 8 items completados)
+> **Estado actual:** En desarrollo Beta (Checklist técnico 60% completo - 9/15 items)
 
 ---
 
@@ -25,6 +25,7 @@
 - **🆕 Rate limiting en endpoints críticos** (18/02/2026)
 - **🆕 Páginas de error personalizadas 404 y 500** (18/02/2026)
 - **🆕 Meta tags y SEO optimizado** (18/02/2026)
+- **🆕 CORS configurado en endpoints críticos** (18/02/2026)
 
 ### 🔄 **Progreso de Características Críticas para Beta**
 - ✅ **1/4** - Sistema de Notificaciones (completado)
@@ -362,9 +363,9 @@ model ServicePhoto {
 - [x] Middleware de rutas protegidas
 - [x] Validación de roles en API
 - [x] **Rate limiting** (prevenir abuso de API) - COMPLETADO
+- [x] **CORS configurado correctamente** - COMPLETADO
 - [ ] **HTTPS obligatorio** (verificar en Vercel)
 - [ ] **Sanitización de inputs** (prevenir XSS/SQL injection)
-- [ ] **CORS configurado correctamente**
 - [x] **Variables de entorno en producción**
 
 ### Performance
@@ -474,9 +475,11 @@ model ServicePhoto {
 ### **SEMANA 1 (Crítico)** 🔴
 - [x] ~~Implementar notificaciones por email~~ ✅ **COMPLETADO** (17/02/2026)
 - [x] ~~Sistema de recuperación de contraseña~~ ✅ **COMPLETADO** (18/02/2026)
-- [ ] Rate limiting en API (express-rate-limit)
+- [x] ~~Rate limiting en API~~ ✅ **COMPLETADO** (18/02/2026)
+- [x] ~~Páginas 404 y 500 personalizadas~~ ✅ **COMPLETADO** (18/02/2026)
+- [x] ~~Meta tags y SEO~~ ✅ **COMPLETADO** (18/02/2026)
+- [x] ~~CORS configurado~~ ✅ **COMPLETADO** (18/02/2026)
 - [ ] Crear términos y condiciones + privacidad
-- [ ] Páginas 404 y 500 personalizadas
 
 ### **SEMANA 2 (Importante)** 🟡
 - [ ] Integración Google Maps API
@@ -580,6 +583,7 @@ model ServicePhoto {
 	- Rate limiting en endpoints críticos
 	- Páginas de error personalizadas (404, 500)
 	- Meta tags y SEO optimizado
+	- CORS configurado en endpoints críticos
 ```
 
 ### 🔧 **Implementaciones de 18 de Febrero - PRE-LAUNCH CHECKLIST**
@@ -661,16 +665,57 @@ model ServicePhoto {
 - Mejor preview en redes sociales
 - Mejor experience en dispositivos móviles
 
+#### 4. ✅ **CORS Configurado** (Completado)
+**Propósito:** Permitir requests desde orígenes autorizados y prevenir CSRF
+
+**Archivo creado:**
+- `src/lib/cors.ts` - Utilidad centralizada para CORS
+  - Función `isOriginAllowed()` - Valida orígenes permitidos
+  - Función `setCORSHeaders()` - Aplica headers CORS a respuestas
+  - Función `handleCORSPreflight()` - Maneja requests OPTIONS
+  - Función `corsMiddleware()` - Wrapper para endpoints completos
+
+**Orígenes permitidos:**
+```typescript
+const ALLOWED_ORIGINS = [
+  "https://motohelp-iota.vercel.app",
+  "https://motohelp.vercel.app",
+  "http://localhost:3000", // Desarrollo
+  "http://localhost:3001", // Desarrollo alternativo
+];
+```
+
+**Endpoints protegidos con CORS:**
+- `POST /api/auth/register` - Acceso desde cualquier origen permitido
+- `POST /api/auth/forgot-password` - Acceso desde cualquier origen permitido
+- `POST /api/auth/reset-password` - Acceso desde cualquier origen permitido
+- `GET/POST /api/service-requests` - Acceso desde cualquier origen permitido
+- `GET/POST /api/reviews` - Acceso desde cualquier origen permitido
+
+**Headers CORS implementados:**
+- `Access-Control-Allow-Origin` - Solo orígenes whitelisted
+- `Access-Control-Allow-Methods` - GET, POST, PUT, DELETE, PATCH, OPTIONS
+- `Access-Control-Allow-Headers` - Content-Type, Authorization, etc.
+- `Access-Control-Allow-Credentials` - true (permite cookies/auth)
+- `Access-Control-Max-Age` - 86400 (24 horas para preflight cache)
+
+**Características:**
+- Preflight request (OPTIONS) automatizado
+- Validación de origen en whitelist
+- Headers configurables por endpoint
+- Retorna 403 Forbidden si origen no está permitido
+- Soporte para desarrollo local sin restricciones
+
 ### 🎯 Próximos pasos recomendados:
 
 ```
-4️⃣ Términos legales (CRÍTICO) ⏭️ SIGUIENTE
-5️⃣ Google Maps Integration (MUY IMPORTANTE)
-6️⃣ Sistema de pagos (IMPORTANTE)
-7️⃣ Tests automatizados (RECOMENDADO)
+7️⃣ Términos legales (CRÍTICO) ⏭️ SIGUIENTE
+8️⃣ Google Maps Integration (MUY IMPORTANTE)
+9️⃣ Sistema de pagos (IMPORTANTE)
+🔟 Tests automatizados (RECOMENDADO)
 ```
 
-**Estado:** 3 características críticas + checklist pre-launch en progreso
-**Checklist completados:** 8 items de seguridad/UX/SEO
+**Estado:** 3 características críticas + 9 items de checklist pre-lanzamiento completados  
+**Porcentaje completado:** 60% del checklist técnico pre-lanzamiento (9/15 items)
 
 ¿Continuamos con el punto 3️⃣ (Términos y Condiciones Legales)? 🚀

@@ -4,14 +4,20 @@ import { authOptions } from "@/lib/auth";
 import { createServiceRequestSchema } from "@/lib/validations/serviceRequest";
 import { serviceTypeRepository } from "@/repositories/serviceTypeRepository";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { setCORSHeaders, handleCORSPreflight } from "@/lib/cors";
 import { z } from "zod";
 import { mechanicProfileService } from "@/services/mechanicProfileService";
 import { serviceRequestService } from "@/services/serviceRequestService";
 
-export async function GET(request: Request) {
+export async function OPTIONS(request: NextRequest) {
+  return handleCORSPreflight(request);
+}
+
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    const response = NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 
   const scope = new URL(request.url).searchParams.get("scope");
@@ -20,51 +26,61 @@ export async function GET(request: Request) {
     // Verificar que el mecánico esté verificado
     const profile = await mechanicProfileService.getByUserId(session.user.id);
     if (!profile) {
-      return NextResponse.json([]);
+      const response = NextResponse.json([]);
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
 
     if (!profile.verified) {
       // Retornar array vacío si no está verificado
       // El dashboard mostrará un mensaje apropiado
-      return NextResponse.json([]);
+      const response = NextResponse.json([]);
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
 
     if (scope === "assigned") {
       const requests = await serviceRequestService.listAssignedToMechanic(session.user.id);
-      return NextResponse.json(requests);
+      const response = NextResponse.json(requests);
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
 
     const allowedServiceIds = profile?.services?.map((service) => service.serviceTypeId) ?? [];
     if (!allowedServiceIds.length) {
-      return NextResponse.json([]);
+      const response = NextResponse.json([]);
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
     const requests = await serviceRequestService.listAvailable(allowedServiceIds);
-    return NextResponse.json(requests);
+    const response = NextResponse.json(requests);
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 
   if (session.user.role === "ADMIN") {
     const requests = await serviceRequestService.listAll();
-    return NextResponse.json(requests);
+    const response = NextResponse.json(requests);
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 
   const requests = await serviceRequestService.listByClient(session.user.id);
-  return NextResponse.json(requests);
+  const response = NextResponse.json(requests);
+  return setCORSHeaders(response, request.headers.get("origin"));
 }
 
 export async function POST(request: NextRequest) {
   // Rate limiting: 20 solicitudes de servicio por hora
   const rateLimitCheck = checkRateLimit(request, 20, 60 * 60 * 1000);
   if (!rateLimitCheck.allowed && rateLimitCheck.response) {
-    return rateLimitCheck.response;
+    const response = setCORSHeaders(rateLimitCheck.response, request.headers.get("origin"));
+    return response;
   }
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    const response = NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 
   if (session.user.role !== "CLIENT") {
-    return NextResponse.json({ message: "Solo clientes pueden crear solicitudes" }, { status: 403 });
+    const response = NextResponse.json({ message: "Solo clientes pueden crear solicitudes" }, { status: 403 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 
   try {
@@ -74,7 +90,8 @@ export async function POST(request: NextRequest) {
     const serviceType = await serviceTypeRepository.listActive();
     const isValidType = serviceType.some((type) => type.id === data.serviceTypeId);
     if (!isValidType) {
-      return NextResponse.json({ message: "Tipo de servicio inválido" }, { status: 400 });
+      const response = NextResponse.json({ message: "Tipo de servicio inválido" }, { status: 400 });
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
 
     const created = await serviceRequestService.create({
@@ -86,12 +103,15 @@ export async function POST(request: NextRequest) {
       price: data.price,
     });
 
-    return NextResponse.json(created, { status: 201 });
+    const response = NextResponse.json(created, { status: 201 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   } catch (error) {
     if (error instanceof z.ZodError) {
       const first = error.issues[0];
-      return NextResponse.json({ message: first?.message ?? "Datos inválidos" }, { status: 400 });
+      const response = NextResponse.json({ message: first?.message ?? "Datos inválidos" }, { status: 400 });
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
-    return NextResponse.json({ message: "Error al crear solicitud" }, { status: 500 });
+    const response = NextResponse.json({ message: "Error al crear solicitud" }, { status: 500 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 }

@@ -4,23 +4,31 @@ import { authOptions } from "@/lib/auth";
 import { createReviewSchema } from "@/lib/validations/review";
 import { reviewService } from "@/services/reviewService";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { setCORSHeaders, handleCORSPreflight } from "@/lib/cors";
 import { NotificationService } from "@/services/notificationService";
 import { serviceRequestService } from "@/services/serviceRequestService";
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCORSPreflight(request);
+}
 
 export async function POST(request: NextRequest) {
   // Rate limiting: 10 reseñas por hora
   const rateLimitCheck = checkRateLimit(request, 10, 60 * 60 * 1000);
   if (!rateLimitCheck.allowed && rateLimitCheck.response) {
-    return rateLimitCheck.response;
+    const response = setCORSHeaders(rateLimitCheck.response, request.headers.get("origin"));
+    return response;
   }
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    const response = NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
   
   if (session.user.role !== "CLIENT") {
-    return NextResponse.json({ message: "Solo clientes pueden calificar" }, { status: 403 });
+    const response = NextResponse.json({ message: "Solo clientes pueden calificar" }, { status: 403 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 
   try {
@@ -42,25 +50,31 @@ export async function POST(request: NextRequest) {
       }).catch(err => console.error("Error sending rating notification:", err));
     }
 
-    return NextResponse.json(review, { status: 201 });
+    const successResponse = NextResponse.json(review, { status: 201 });
+    return setCORSHeaders(successResponse, request.headers.get("origin"));
   } catch (error: any) {
     if (error.message === "Servicio no encontrado") {
-      return NextResponse.json({ message: error.message }, { status: 404 });
+      const response = NextResponse.json({ message: error.message }, { status: 404 });
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
     if (error.message === "Solo puedes calificar servicios finalizados") {
-      return NextResponse.json({ message: error.message }, { status: 400 });
+      const response = NextResponse.json({ message: error.message }, { status: 400 });
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
     if (error.message === "Este servicio ya tiene una calificación") {
-      return NextResponse.json({ message: error.message }, { status: 409 });
+      const response = NextResponse.json({ message: error.message }, { status: 409 });
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
-    return NextResponse.json({ message: "Error al crear calificación" }, { status: 500 });
+    const response = NextResponse.json({ message: "Error al crear calificación" }, { status: 500 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    const response = NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 
   const { searchParams } = new URL(request.url);
@@ -70,17 +84,21 @@ export async function GET(request: Request) {
   try {
     if (serviceId) {
       const review = await reviewService.findByService(serviceId);
-      return NextResponse.json(review);
+      const response = NextResponse.json(review);
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
 
     if (mechanicId) {
       const reviews = await reviewService.getMechanicReviews(mechanicId);
       const stats = await reviewService.getMechanicStats(mechanicId);
-      return NextResponse.json({ reviews, stats });
+      const response = NextResponse.json({ reviews, stats });
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
 
-    return NextResponse.json({ message: "Parámetros requeridos" }, { status: 400 });
+    const response = NextResponse.json({ message: "Parámetros requeridos" }, { status: 400 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    return NextResponse.json({ message: "Error al obtener reseñas" }, { status: 500 });
+    const response = NextResponse.json({ message: "Error al obtener reseñas" }, { status: 500 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 }

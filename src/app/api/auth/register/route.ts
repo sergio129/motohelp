@@ -3,6 +3,11 @@ import { registerSchema } from "@/lib/validations/auth";
 import { authService } from "@/services/authService";
 import { NotificationService } from "@/services/notificationService";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { setCORSHeaders, handleCORSPreflight } from "@/lib/cors";
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCORSPreflight(request);
+}
 
 export async function POST(request: NextRequest) {
   // Rate limiting: 5 intentos de registro por hora
@@ -43,17 +48,20 @@ export async function POST(request: NextRequest) {
       }).catch(err => console.error("Error sending admin notification:", err));
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
     });
+    return setCORSHeaders(response, request.headers.get("origin"));
   } catch (error) {
     if (error instanceof Error && error.message === "EMAIL_ALREADY_EXISTS") {
-      return NextResponse.json({ message: "El email ya está registrado" }, { status: 409 });
+      const response = NextResponse.json({ message: "El email ya está registrado" }, { status: 409 });
+      return setCORSHeaders(response, request.headers.get("origin"));
     }
 
-    return NextResponse.json({ message: "Datos inválidos" }, { status: 400 });
+    const response = NextResponse.json({ message: "Datos inválidos" }, { status: 400 });
+    return setCORSHeaders(response, request.headers.get("origin"));
   }
 }
