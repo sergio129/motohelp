@@ -99,6 +99,7 @@ export default function MechanicDashboard() {
   const [notes, setNotes] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [profileTab, setProfileTab] = useState<"personal" | "professional" | "addresses">("personal");
+  const [addressesSubTab, setAddressesSubTab] = useState<"list" | "add">("list");
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
 
@@ -786,10 +787,35 @@ export default function MechanicDashboard() {
                   )}
 
                   {profileTab === "addresses" && (
-                    <div className="space-y-6">
-                      {/* Tabla de direcciones */}
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-white">Mis direcciones</h3>
+                    <div className="space-y-4">
+                      {/* Sub-tabs para direcciones */}
+                      <div className="flex gap-2 border-b border-white/10">
+                        <button
+                          onClick={() => setAddressesSubTab("list")}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${
+                            addressesSubTab === "list"
+                              ? "border-b-2 border-orange-500 text-white"
+                              : "text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          Ver direcciones
+                        </button>
+                        <button
+                          onClick={() => setAddressesSubTab("add")}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${
+                            addressesSubTab === "add"
+                              ? "border-b-2 border-orange-500 text-white"
+                              : "text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          {editingAddressId ? "Editar dirección" : "Agregar dirección"}
+                        </button>
+                      </div>
+
+                      {/* Sub-tab: Ver direcciones */}
+                      {addressesSubTab === "list" && (
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-white">Mis direcciones</h3>
                         {addresses?.length ? (
                           <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02]">
                             <table className="w-full text-sm">
@@ -855,28 +881,27 @@ export default function MechanicDashboard() {
                             </p>
                           </div>
                         )}
-                      </div>
+                        </div>
+                      )}
 
-                      {/* Divisor */}
-                      <div className="border-t border-white/10" />
-
-                      {/* Formulario para agregar/editar dirección */}
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-2">
-                          <div className="mt-1 flex-shrink-0">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500/20 text-orange-300">
-                              {editingAddressId ? "✎" : "+"}
+                      {/* Sub-tab: Agregar/Editar dirección */}
+                      {addressesSubTab === "add" && (
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-2">
+                            <div className="mt-1 flex-shrink-0">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500/20 text-orange-300">
+                                {editingAddressId ? "✎" : "+"}
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-white">
+                                {editingAddressId ? "Editar dirección" : "Agregar nueva dirección"}
+                              </h3>
+                              <p className="text-xs text-slate-400">Completa los datos y guarda</p>
                             </div>
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-white">
-                              {editingAddressId ? "Editar dirección" : "Agregar nueva dirección"}
-                            </h3>
-                            <p className="text-xs text-slate-400">Completa los datos y guarda</p>
-                          </div>
-                        </div>
 
-                        <form className="space-y-3 rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/50 to-slate-950 p-4">
+                          <form className="space-y-3 rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/50 to-slate-950 p-4">
                           <div className="grid gap-2 md:grid-cols-2">
                             <div className="space-y-1">
                               <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="addrLabel">Etiqueta</Label>
@@ -973,7 +998,8 @@ export default function MechanicDashboard() {
                             )}
                           </div>
                         </form>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
