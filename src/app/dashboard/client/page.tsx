@@ -190,8 +190,8 @@ export default function ClientDashboard() {
         throw new Error(error.message || "Error al guardar datos personales");
       }
 
-      // Guardar dirección si hay datos
-      if (street && city && state && postalCode && country) {
+      // Guardar dirección si hay datos y estamos en el tab de direcciones
+      if (profileTab === "addresses" && street && city && state && postalCode && country) {
         const addressRes = await fetch("/api/addresses", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -211,6 +211,7 @@ export default function ClientDashboard() {
           throw new Error(error.message || "Error al guardar dirección");
         }
 
+        // Limpiar campos de dirección después de guardar
         setAddrLabel("");
         setStreet("");
         setCity("");
@@ -223,7 +224,6 @@ export default function ClientDashboard() {
       toast.success("✅ Información guardada exitosamente", { id: loadingToast });
       refreshProfile();
       refreshAddresses();
-      setIsProfileOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error al guardar";
       toast.error(message, { id: loadingToast });

@@ -176,30 +176,32 @@ export default function MechanicDashboard() {
         throw new Error(error.message || "Error al guardar datos personales");
       }
 
-      // Guardar datos profesionales
-      const formData = new FormData();
-      formData.append("experienceYears", experienceYears || String(profile?.experienceYears ?? ""));
-      formData.append("specialty", specialty || String(profile?.specialty ?? ""));
-      const currentServices = selectedServiceIds.length
-        ? selectedServiceIds
-        : profile?.services?.map((service) => service.serviceType.id) ?? [];
-      formData.append("serviceTypeIds", JSON.stringify(currentServices));
-      if (document) {
-        formData.append("document", document);
+      // Guardar datos profesionales si hay datos
+      if (experienceYears || specialty || selectedServiceIds.length > 0 || document) {
+        const formData = new FormData();
+        formData.append("experienceYears", experienceYears || String(profile?.experienceYears ?? ""));
+        formData.append("specialty", specialty || String(profile?.specialty ?? ""));
+        const currentServices = selectedServiceIds.length
+          ? selectedServiceIds
+          : profile?.services?.map((service) => service.serviceType.id) ?? [];
+        formData.append("serviceTypeIds", JSON.stringify(currentServices));
+        if (document) {
+          formData.append("document", document);
+        }
+
+        const profileRes = await fetch("/api/mechanic-profile", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!profileRes.ok) {
+          const error = await profileRes.json();
+          throw new Error(error.message || "Error al guardar perfil profesional");
+        }
       }
 
-      const profileRes = await fetch("/api/mechanic-profile", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!profileRes.ok) {
-        const error = await profileRes.json();
-        throw new Error(error.message || "Error al guardar perfil profesional");
-      }
-
-      // Guardar dirección si hay datos
-      if (street && city && state && postalCode && country) {
+      // Guardar dirección si hay datos y estamos en el tab de addresses
+      if (profileTab === "addresses" && street && city && state && postalCode && country) {
         const addressRes = await fetch("/api/addresses", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -219,6 +221,7 @@ export default function MechanicDashboard() {
           throw new Error(error.message || "Error al guardar dirección");
         }
 
+        // Limpiar campos de dirección después de guardar exitosamente
         setAddrLabel("");
         setStreet("");
         setCity("");
@@ -228,61 +231,19 @@ export default function MechanicDashboard() {
         setReference("");
       }
 
-      setDocument(null);
       toast.success("✅ Información guardada exitosamente", { id: loadingToast });
-      refreshPersonal();
-      refreshProfile();
-      refreshAddresses();
-      setIsProfileOpen(false);
+      
+      // Refrescar todos los datos
+      refreshProfile?.();
+      refreshPersonal?.();
+      refreshAddresses?.();
+      
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error al guardar";
       toast.error(message, { id: loadingToast });
     } finally {
       setSavingProfile(false);
     }
-  }
-
-  async function handleProfileSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setSavingProfile(true);
-
-    const formData = new FormData();
-    formData.append("experienceYears", experienceYears || String(profile?.experienceYears ?? ""));
-    formData.append("specialty", specialty || String(profile?.specialty ?? ""));
-    const currentServices = selectedServiceIds.length
-      ? selectedServiceIds
-      : profile?.services?.map((service) => service.serviceType.id) ?? [];
-    formData.append("serviceTypeIds", JSON.stringify(currentServices));
-    if (document) {
-      formData.append("document", document);
-    }
-
-    await fetch("/api/mechanic-profile", {
-      method: "POST",
-      body: formData,
-    });
-
-    setDocument(null);
-    setSavingProfile(false);
-    refreshProfile();
-  }
-
-  async function handleSavePersonal(event: React.FormEvent) {
-    event.preventDefault();
-    setSavingPersonal(true);
-
-    await fetch("/api/profile/mechanic", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        phone: phone || undefined,
-        documentId: documentId || undefined,
-      }),
-    });
-
-    setSavingPersonal(false);
-    refreshPersonal();
   }
 
   async function handleAddAddress(event?: React.FormEvent) {
@@ -345,10 +306,16 @@ export default function MechanicDashboard() {
     }
   }
 
-  function toggleService(id: string) {
+  function toggleService(serviceId: string) {
     setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
     );
+  }
+
+  function formatAddress(addr: Address): string {
+    return `${addr.street}, ${addr.city}, ${addr.state}, ${addr.postalCode}, ${addr.country}`;
   }
 
   function statusBadge(status: string) {
@@ -362,10 +329,6 @@ export default function MechanicDashboard() {
       CANCELADO: "bg-red-500/20 text-red-200",
     };
     return `${base} ${styles[status] ?? "bg-white/10 text-slate-200"}`;
-  }
-
-  function formatAddress(item: Address) {
-    return `${item.street}, ${item.city}, ${item.state} ${item.postalCode}, ${item.country}`;
   }
 
   return (
