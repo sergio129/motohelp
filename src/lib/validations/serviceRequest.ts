@@ -1,9 +1,16 @@
 import { z } from "zod";
+import { sanitizeString } from "@/lib/sanitization";
 
 export const createServiceRequestSchema = z.object({
   serviceTypeId: z.string().min(1, "Selecciona un tipo de servicio"),
-  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
-  address: z.string().min(5, "La dirección debe tener al menos 5 caracteres"),
+  description: z
+    .string()
+    .min(10, "La descripción debe tener al menos 10 caracteres")
+    .transform(sanitizeString),
+  address: z
+    .string()
+    .min(5, "La dirección debe tener al menos 5 caracteres")
+    .transform(sanitizeString),
   scheduledAt: z.coerce.date(),
   price: z.coerce.number().positive().optional(),
 }).refine((data) => data.scheduledAt.getTime() > Date.now(), {
