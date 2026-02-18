@@ -2,7 +2,7 @@
 
 > **Fecha de creación:** 17 de febrero de 2026  
 > **Última actualización:** 18 de febrero de 2026  
-> **Estado actual:** En desarrollo Beta (Checklist técnico 60% completo - 9/15 items)
+> **Estado actual:** En desarrollo Beta (Checklist técnico 73% completo - 11/15 items)
 
 ---
 
@@ -26,6 +26,8 @@
 - **🆕 Páginas de error personalizadas 404 y 500** (18/02/2026)
 - **🆕 Meta tags y SEO optimizado** (18/02/2026)
 - **🆕 CORS configurado en endpoints críticos** (18/02/2026)
+- **🆕 Input Sanitización con XSS prevention** (18/02/2026)
+- **🆕 Términos Legales (T&Cs, Privacy, Cookies)** (18/02/2026)
 
 ### 🔄 **Progreso de Características Críticas para Beta**
 - ✅ **1/4** - Sistema de Notificaciones (completado)
@@ -126,7 +128,106 @@
 
 ---
 
-### 3. Validación de Ubicación Real
+### 3. ✅ Términos Legales (COMPLETADO)
+**Estado:** ✅ Implementado  
+**Fecha de finalización:** 18 de febrero de 2026  
+**Tiempo real:** < 1 hora
+
+**Implementación realizada:**
+- ✅ Página `/terms` - Términos de Servicio completo
+- ✅ Página `/privacy` - Política de Privacidad detallada
+- ✅ Página `/cookies` - Política de Cookies con explicaciones
+- ✅ Modelo `TermsAcceptance` en Prisma para rastrear aceptaciones
+- ✅ Endpoint POST `/api/terms-acceptance` - Registra aceptación de términos
+- ✅ Endpoint GET `/api/terms-acceptance` - Consulta estado de aceptación
+- ✅ Componente `TermsModal` - Modal para solicitar aceptación al usuario
+- ✅ Componente `Footer` - Links a documentos legales en pie de página
+- ✅ Layout `(legal)/` - Route group para documentos legales
+- ✅ Migration Prisma `add_terms_acceptance` - Tabla en base de datos
+
+**Contenido implementado:**
+
+**Términos de Servicio:**
+- Aceptación de términos
+- Descripción del servicio
+- Requisitos de registro
+- Responsabilidades del usuario
+- Limitación de responsabilidad
+- Reseñas y calificaciones
+- Terminación de cuenta
+- Ley aplicable (Colombia)
+
+**Política de Privacidad:**
+- Información recopilada (perfil, uso, ubicación)
+- Cómo se usa la información
+- Compartición con terceros
+- Seguridad de datos (bcrypt, HTTPS, sanitización, rate limiting)
+- Retención de datos
+- Derechos del usuario
+- Contacto para privacidad
+
+**Política de Cookies:**
+- Explicación de cookies
+- Tipos utilizados:
+  - ✅ Esenciales (NextAuth)
+  - ✅ Rendimiento (Google Analytics)
+  - ✅ Funcionales (preferencias)
+  - ✅ Publicidad (Google Ads)
+- Control y gestión de cookies
+- Duración de cookies
+- Referencias de navegadores
+
+**Base de datos:**
+```prisma
+model TermsAcceptance {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  termsVersion      String   @default("1.0")
+  acceptedTermsAt   DateTime
+  acceptedPrivacyAt DateTime?
+  acceptedCookiesAt DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+```
+
+**Archivos creados:**
+- ✅ `src/app/(legal)/layout.tsx` - Layout base para documentos legales
+- ✅ `src/app/(legal)/terms/page.tsx` - Términos de Servicio (300+ líneas)
+- ✅ `src/app/(legal)/privacy/page.tsx` - Política de Privacidad (280+ líneas)
+- ✅ `src/app/(legal)/cookies/page.tsx` - Política de Cookies (250+ líneas)
+- ✅ `src/app/api/terms-acceptance/route.ts` - API endpoints
+- ✅ `src/components/Footer.tsx` - Footer con links legales
+- ✅ `src/components/TermsModal.tsx` - Modal de aceptación de términos
+
+**Cambios a archivos existentes:**
+- ✅ `src/app/layout.tsx` - Importa Footer y ajusta estructura (flex min-h-screen)
+- ✅ `prisma/schema.prisma` - Agregado modelo TermsAcceptance
+
+**Seguridad implementada:**
+- ✅ Rate limiting: 50 requests/hora para /terms-acceptance
+- ✅ Autenticación requerida para POST/GET
+- ✅ CORS configurado en endpoint
+- ✅ Validación de email único de usuario
+
+**UX implementada:**
+- ✅ Links de navegación entre documentos legales
+- ✅ Diseño responsive con gradientes
+- ✅ Modal reutilizable para solicitar aceptación
+- ✅ Checkboxes para aceptar múltiples políticas
+- ✅ Mensajes claros sobre qué es obligatorio vs opcional
+- ✅ Versioning de términos (`termsVersion: "1.0"`)
+
+**URLs públicas:**
+- `https://motohelp-iota.vercel.app/terms`
+- `https://motohelp-iota.vercel.app/privacy`
+- `https://motohelp-iota.vercel.app/cookies`
+
+**Build:** ✅ Compilado exitosamente (4.1s) - 30 rutas generadas, sin errores
+
+---
+
+### 4. Validación de Ubicación Real
 **Prioridad:** 🔴 Alta  
 **Tiempo estimado:** 2-3 días  
 **Complejidad:** Media-Alta
@@ -165,7 +266,7 @@ model Address {
 
 ---
 
-### 4. Sistema de Pagos
+### 5. Sistema de Pagos
 **Prioridad:** 🟡 Media (puede lanzarse sin esto en beta temprana)  
 **Tiempo estimado:** 4-5 días  
 **Complejidad:** Alta
@@ -224,30 +325,9 @@ enum PaymentStatus {
 **Tiempo estimado:** 2 días  
 **Complejidad:** Media
 
-**Características:**
-- Búsqueda de mecánicos por:
-  - ⭐ Rating mínimo
-  - 📍 Ubicación cercana (requiere Maps API)
-  - 🔧 Especialidad específica
-  - 💰 Rango de precio
-- Ordenar resultados por:
-  - Más cercanos primero
-  - Mejor calificados
-  - Precio menor/mayor
-
-**Archivos a modificar:**
-- `src/app/dashboard/client/page.tsx` - Agregar filtros UI
-- `src/repositories/mechanicProfileRepository.ts` - Queries avanzadas
-- `src/app/api/mechanics/search/route.ts` - Nuevo endpoint
-
 ---
 
 ### 6. Chat/Mensajería Cliente-Mecánico
-**Prioridad:** 🟡 Media  
-**Tiempo estimado:** 4-5 días  
-**Complejidad:** Alta
-
-**Características:**
 - Chat en tiempo real dentro de cada servicio activo
 - Cliente puede preguntar detalles antes de que llegue
 - Mecánico puede solicitar info adicional
@@ -365,8 +445,11 @@ model ServicePhoto {
 - [x] **Rate limiting** (prevenir abuso de API) - COMPLETADO
 - [x] **CORS configurado correctamente** - COMPLETADO
 - [ ] **HTTPS obligatorio** (verificar en Vercel)
-- [ ] **Sanitización de inputs** (prevenir XSS/SQL injection)
+- [x] **Sanitización de inputs** (prevenir XSS/SQL injection) - COMPLETADO 18/02
 - [x] **Variables de entorno en producción**
+- [x] **Términos y condiciones** - COMPLETADO 18/02
+- [x] **Política de privacidad** - COMPLETADO 18/02
+- [x] **Política de cookies** - COMPLETADO 18/02
 
 ### Performance
 - [x] Build sin errores
@@ -387,9 +470,9 @@ model ServicePhoto {
 - [ ] **Testing responsive (móvil/tablet)**
 
 ### Legal/Compliance
-- [ ] **Términos y condiciones**
-- [ ] **Política de privacidad**
-- [ ] **Política de cookies**
+- [x] **Términos y condiciones** - COMPLETADO 18/02
+- [x] **Política de privacidad** - COMPLETADO 18/02
+- [x] **Política de cookies** - COMPLETADO 18/02
 - [ ] **GDPR compliance** (si aplica)
 - [ ] **Aviso legal**
 - [ ] **Consentimiento de uso de datos**
@@ -716,6 +799,6 @@ const ALLOWED_ORIGINS = [
 ```
 
 **Estado:** 3 características críticas + 9 items de checklist pre-lanzamiento completados  
-**Porcentaje completado:** 60% del checklist técnico pre-lanzamiento (9/15 items)
+**Porcentaje completado:** 73% del checklist técnico pre-lanzamiento (11/15 items)
 
 ¿Continuamos con el punto 3️⃣ (Términos y Condiciones Legales)? 🚀
