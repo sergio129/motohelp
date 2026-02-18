@@ -232,33 +232,44 @@ export default function ClientDashboard() {
     }
   }
 
-  async function handleAddAddress(event: React.FormEvent) {
-    event.preventDefault();
+  async function handleAddAddress(event?: React.FormEvent) {
+    event?.preventDefault();
     setSavingAddress(true);
 
-    await fetch("/api/addresses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        label: addrLabel || undefined,
-        street,
-        city,
-        state,
-        postalCode,
-        country,
-        reference: reference || undefined,
-      }),
-    });
+    try {
+      const res = await fetch("/api/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label: addrLabel || undefined,
+          street,
+          city,
+          state,
+          postalCode,
+          country,
+          reference: reference || undefined,
+        }),
+      });
 
-    setAddrLabel("");
-    setStreet("");
-    setCity("");
-    setState("");
-    setPostalCode("");
-    setCountry("");
-    setReference("");
-    setSavingAddress(false);
-    refreshAddresses();
+      if (res.ok) {
+        setAddrLabel("");
+        setStreet("");
+        setCity("");
+        setState("");
+        setPostalCode("");
+        setCountry("");
+        setReference("");
+        toast.success("✅ Dirección guardada exitosamente");
+        refreshAddresses();
+      } else {
+        const data = await res.json();
+        toast.error(data.message || "Error al guardar dirección");
+      }
+    } catch (error) {
+      toast.error("Error al guardar dirección");
+    } finally {
+      setSavingAddress(false);
+    }
   }
 
   async function handleSetPrimary(id: string) {
@@ -722,13 +733,13 @@ export default function ClientDashboard() {
                             type="button"
                             onClick={() => {
                               if (street && city && state && postalCode && country) {
-                                handleSaveProfile(new Event('submit') as any);
+                                handleAddAddress();
                               }
                             }}
-                            disabled={savingProfile}
+                            disabled={savingAddress}
                             className="w-full bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold disabled:opacity-50"
                           >
-                            {savingProfile ? "Guardando..." : "+ Agregar dirección"}
+                            {savingAddress ? "Guardando..." : "+ Agregar dirección"}
                           </Button>
                         </form>
                       </div>

@@ -285,8 +285,8 @@ export default function MechanicDashboard() {
     refreshPersonal();
   }
 
-  async function handleAddAddress(event: React.FormEvent) {
-    event.preventDefault();
+  async function handleAddAddress(event?: React.FormEvent) {
+    event?.preventDefault();
     setSavingAddress(true);
 
     try {
@@ -848,13 +848,13 @@ export default function MechanicDashboard() {
                             type="button"
                             onClick={() => {
                               if (street && city && state && postalCode && country) {
-                                handleSaveProfile(new Event('submit') as any);
+                                handleAddAddress();
                               }
                             }}
-                            disabled={savingProfile}
+                            disabled={savingAddress}
                             className="w-full bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold disabled:opacity-50"
                           >
-                            {savingProfile ? "Guardando..." : "+ Agregar dirección"}
+                            {savingAddress ? "Guardando..." : "+ Agregar dirección"}
                           </Button>
                         </form>
                       </div>
