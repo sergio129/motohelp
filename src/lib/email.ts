@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { emailPasswordReset } from "./emailTemplates";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -70,4 +71,21 @@ export async function verifyEmailConnection() {
     console.error("❌ Error en configuración SMTP:", error);
     return false;
   }
+}
+
+/**
+ * Enviar email de recuperación de contraseña
+ */
+export async function sendPasswordResetEmail(
+  email: string,
+  userName: string,
+  resetUrl: string
+) {
+  const html = emailPasswordReset({ userName, resetUrl });
+  
+  return sendEmail({
+    to: email,
+    subject: "Reestablece tu contraseña en MotoHelp",
+    html,
+  });
 }

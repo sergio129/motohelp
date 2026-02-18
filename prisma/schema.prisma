@@ -38,6 +38,7 @@ model User {
   addresses       Address[]
   serviceRequests ServiceRequest[] @relation("ClientRequests")
   assignedServices ServiceRequest[] @relation("MechanicRequests")
+  passwordResetTokens PasswordResetToken[]
 }
 
 model MechanicProfile {
@@ -152,4 +153,17 @@ model StatusHistory {
   service ServiceRequest @relation(fields: [serviceId], references: [id])
 
   @@index([serviceId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

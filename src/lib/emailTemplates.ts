@@ -495,5 +495,57 @@ export function emailWelcome(data: {
         </div>
       </body>
     </html>
+  `;}
+
+/**
+ * Email para recuperación de contraseña
+ */
+export function emailPasswordReset(data: {
+  userName: string;
+  resetUrl: string;
+}) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="${baseStyles}">
+        <div style="${containerStyles}">
+          <div style="${headerStyles}">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🔐 Recuperar Contraseña</h1>
+          </div>
+          <div style="padding: 30px 20px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              Hola <strong>${data.userName}</strong>,
+            </p>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              Recibimos una solicitud para reestablecertu contraseña. Si no fuiste tú, puedes ignorar este email.
+            </p>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              Para crear una nueva contraseña, haz clic en el siguiente botón:
+            </p>
+            <a href="${data.resetUrl}" style="${buttonStyles}">
+              Reestablecercontraseña
+            </a>
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+              <p style="margin: 0; font-size: 14px; color: #92400e;">
+                ⏰ Este enlace expira en <strong>1 hora</strong>
+              </p>
+            </div>
+            <p style="font-size: 14px; color: #666; margin-top: 20px;">
+              Si el botón no funciona, copia y pega este enlace en tu navegador:
+            </p>
+            <p style="font-size: 12px; color: #999; word-break: break-all; margin: 10px 0; background-color: #f3f4f6; padding: 10px; border-radius: 4px;">
+              ${data.resetUrl}
+            </p>
+            <p style="font-size: 14px; color: #666; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+              Por tu seguridad, nunca compartiremos tu contraseña ni te la pediremos por email.
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
   `;
 }

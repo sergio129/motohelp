@@ -76,6 +76,11 @@ export default function SignInPage() {
                 className="border-white/10 bg-slate-900/60 text-white placeholder:text-slate-500"
                 required
               />
+              <div className="text-right">
+                <Link href="/auth/forgot-password" className="text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </div>
             {error && <p className="text-sm text-red-300">{error}</p>}
             <Button className="w-full bg-orange-500 text-slate-950 hover:bg-orange-400" type="submit" disabled={loading}>

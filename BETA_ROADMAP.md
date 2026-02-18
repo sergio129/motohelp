@@ -21,10 +21,11 @@
 - Filtros por estado de servicio
 - Dashboard responsivo con diseño moderno
 - **🆕 Sistema completo de notificaciones por email** (17/02/2026)
+- **🆕 Sistema de recuperación de contraseña** (18/02/2026)
 
 ### 🔄 **Progreso de Características Críticas para Beta**
 - ✅ **1/4** - Sistema de Notificaciones (completado)
-- ⏳ **0/4** - Recuperación de contraseña (pendiente)
+- ✅ **2/4** - Recuperación de contraseña (completado)
 - ⏳ **0/4** - Validación de ubicación real (pendiente)
 - ⏳ **0/4** - Sistema de pagos (opcional, puede lanzarse sin esto)
 
@@ -77,39 +78,47 @@
 
 ---
 
-### 2. Recuperación de Contraseña
-**Prioridad:** 🔴 Alta  
-**Tiempo estimado:** 1 día  
-**Complejidad:** Baja
+### 2. ✅ Recuperación de Contraseña (COMPLETADO)
+**Estado:** ✅ Implementado  
+**Fecha de finalización:** 18 de febrero de 2026  
+**Tiempo real:** < 1 hora
 
-**Problema actual:**
-- Si un usuario olvida su contraseña, no puede recuperarla
-- Única opción es crear nueva cuenta
+**Implementación realizada:**
+- ✅ Modelo `PasswordResetToken` en Prisma con relaciones
+- ✅ Endpoint POST `/api/auth/forgot-password` - Genera y envía token por email
+- ✅ Endpoint POST `/api/auth/reset-password` - Valida token y cambia contraseña
+- ✅ Página `/auth/forgot-password` - Formulario para solicitar reset
+- ✅ Página `/auth/reset-password/[token]` - Formulario para nueva contraseña
+- ✅ Template HTML responsive de email con estilos inline
+- ✅ Link "¿Olvidaste tu contraseña?" en página de sign-in
+- ✅ Validaciones de seguridad implementadas:
+  - Tokens expiran en 1 hora
+  - Tokens solo se pueden usar una vez
+  - Contraseñas hasheadas con bcryptjs
+  - Validación de formato y longitud
 
-**Solución propuesta:**
-- Endpoint POST `/api/auth/forgot-password` - Envía email con token
-- Endpoint POST `/api/auth/reset-password` - Valida token y cambia contraseña
-- Página `/auth/reset-password/[token]` - Formulario de nueva contraseña
-- Tokens temporales con expiración de 1 hora
+**Archivos creados:**
+- ✅ `src/app/api/auth/forgot-password/route.ts`
+- ✅ `src/app/api/auth/reset-password/route.ts`
+- ✅ `src/app/auth/forgot-password/page.tsx`
+- ✅ `src/app/auth/reset-password/[token]/page.tsx`
 
-**Archivos a crear:**
-- `src/app/api/auth/forgot-password/route.ts`
-- `src/app/api/auth/reset-password/route.ts`
-- `src/app/auth/forgot-password/page.tsx`
-- `src/app/auth/reset-password/[token]/page.tsx`
+**Cambios realizados:**
+- ✅ `prisma/schema.prisma` - Agregado modelo `PasswordResetToken`
+- ✅ `src/lib/emailTemplates.ts` - Agregado template `emailPasswordReset()`
+- ✅ `src/lib/email.ts` - Agregada función `sendPasswordResetEmail()`
+- ✅ `src/app/auth/sign-in/page.tsx` - Agregado link a forgot-password
 
-**Base de datos:**
-```prisma
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-}
-```
+**Flujo del usuario:**
+1. Usuario haz clic "¿Olvidaste tu contraseña?" en sign-in
+2. Ingresa su email
+3. Recibe email con link temporal (válido 1 hora)
+4. Hace clic en el link del email
+5. Completa nueva contraseña
+6. Sistema valida y actualiza contraseña
+7. Usuario puede iniciar sesión con nueva contraseña
+
+**Build:** ✅ Compilado exitosamente sin errores ni warnings
 
 ---
 
@@ -411,7 +420,7 @@ model ServicePhoto {
 
 ### **Implementar SOLO ESTAS 3 antes del lanzamiento beta:**
 
-#### ✅ **1. Notificaciones por Email** (1-2 días)
+#### ✅ **1. Notificaciones por Email** (1-2 días) - COMPLETADO
 **Por qué es crítico:** Sin notificaciones, los usuarios no saben qué está pasando con sus servicios.
 
 **Eventos a notificar:**
@@ -434,7 +443,7 @@ model ServicePhoto {
 
 ---
 
-#### ✅ **2. Recuperación de Contraseña** (1 día)
+#### ✅ **2. Recuperación de Contraseña** (1 día) - COMPLETADO
 **Por qué es crítico:** Es un estándar esperado en cualquier aplicación.
 
 **Flujo:**
@@ -446,7 +455,7 @@ model ServicePhoto {
 
 ---
 
-#### ✅ **3. Términos y Condiciones + Privacidad** (1 día)
+#### ⏳ **3. Términos y Condiciones + Privacidad** (1 día) - PENDIENTE
 **Por qué es crítico:** Requisito legal para operar.
 
 **Documentos a crear:**
@@ -461,7 +470,7 @@ model ServicePhoto {
 
 ### **SEMANA 1 (Crítico)** 🔴
 - [x] ~~Implementar notificaciones por email~~ ✅ **COMPLETADO** (17/02/2026)
-- [ ] Sistema de recuperación de contraseña
+- [x] ~~Sistema de recuperación de contraseña~~ ✅ **COMPLETADO** (18/02/2026)
 - [ ] Rate limiting en API (express-rate-limit)
 - [ ] Crear términos y condiciones + privacidad
 - [ ] Páginas 404 y 500 personalizadas
@@ -563,17 +572,17 @@ model ServicePhoto {
 ### ✅ Completado hasta ahora:
 ```
 1️⃣ Notificaciones por email ✅ COMPLETADO (17/02/2026)
+2️⃣ Recuperación de contraseña ✅ COMPLETADO (18/02/2026)
 ```
 
 ### 🎯 Próximos pasos recomendados:
 
 ```
-2️⃣ Recuperación de contraseña (CRÍTICO) ⏭️ SIGUIENTE
-3️⃣ Términos legales (CRÍTICO)
+3️⃣ Términos legales (CRÍTICO) ⏭️ SIGUIENTE
 4️⃣ Google Maps (MUY IMPORTANTE)
 5️⃣ Sistema de pagos (IMPORTANTE)
 ```
 
-**Estado:** 1 de 5 características críticas completadas (20% de progreso)
+**Estado:** 2 de 5 características críticas completadas (40% de progreso)
 
-¿Continuamos con el punto 2️⃣ (Recuperación de contraseña)? 🚀
+¿Continuamos con el punto 3️⃣ (Términos y Condiciones Legales)? 🚀
