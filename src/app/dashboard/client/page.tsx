@@ -895,8 +895,8 @@ export default function ClientDashboard() {
                 </div>
               </div>
 
-              {/* Footer con botones */}
-              <div className="border-t border-white/10 px-5 sm:px-6 py-4 flex gap-3 justify-end">
+              {/* Footer con botones - Sticky */}
+              <div className="sticky bottom-0 border-t border-white/10 px-5 sm:px-6 py-4 flex gap-3 justify-end bg-slate-950">
                 <Button
                   type="button"
                   variant="default"
