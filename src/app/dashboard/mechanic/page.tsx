@@ -756,114 +756,156 @@ export default function MechanicDashboard() {
                   )}
 
                   {profileTab === "addresses" && (
-                    <div className="space-y-4">
-                      <div className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                        <p className="text-sm text-blue-200">
-                          <strong>Agregar nueva dirección:</strong> Completa los datos y se agregará a tu lista de direcciones.
-                        </p>
+                    <div className="space-y-6">
+                      {/* Formulario para agregar dirección */}
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-2">
+                          <div className="mt-1 flex-shrink-0">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500/20 text-orange-300">
+                              +
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-white">Agregar nueva dirección</h3>
+                            <p className="text-xs text-slate-400">Completa los datos y guarda</p>
+                          </div>
+                        </div>
+
+                        <form className="space-y-4 rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/50 to-slate-950 p-5">
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="addrLabel">Etiqueta</Label>
+                              <Input
+                                id="addrLabel"
+                                value={addrLabel}
+                                onChange={(event) => setAddrLabel(event.target.value)}
+                                className="border-white/10 bg-slate-900/40 text-sm text-white placeholder-slate-500"
+                                placeholder="ej: Casa, Taller, Oficina"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="street">Calle *</Label>
+                              <Input
+                                id="street"
+                                value={street}
+                                onChange={(event) => setStreet(event.target.value)}
+                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="city">Ciudad *</Label>
+                              <Input
+                                id="city"
+                                value={city}
+                                onChange={(event) => setCity(event.target.value)}
+                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="state">Estado *</Label>
+                              <Input
+                                id="state"
+                                value={state}
+                                onChange={(event) => setState(event.target.value)}
+                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="postal">Código postal *</Label>
+                              <Input
+                                id="postal"
+                                value={postalCode}
+                                onChange={(event) => setPostalCode(event.target.value)}
+                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="country">País *</Label>
+                              <Input
+                                id="country"
+                                value={country}
+                                onChange={(event) => setCountry(event.target.value)}
+                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                required
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="reference">Referencia (opcional)</Label>
+                            <Input
+                              id="reference"
+                              value={reference}
+                              onChange={(event) => setReference(event.target.value)}
+                              placeholder="ej: Puerta azul, Apto 301"
+                              className="border-white/10 bg-slate-900/40 text-sm text-white placeholder-slate-500"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (street && city && state && postalCode && country) {
+                                handleSaveProfile(new Event('submit') as any);
+                              }
+                            }}
+                            disabled={savingProfile}
+                            className="w-full bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold disabled:opacity-50"
+                          >
+                            {savingProfile ? "Guardando..." : "+ Agregar dirección"}
+                          </Button>
+                        </form>
                       </div>
 
-                      <form className="grid gap-4 md:grid-cols-2 bg-slate-900/40 rounded-lg p-4 border border-white/10">
-                        <div className="space-y-2">
-                          <Label className="text-slate-200" htmlFor="addrLabel">Etiqueta</Label>
-                          <Input
-                            id="addrLabel"
-                            value={addrLabel}
-                            onChange={(event) => setAddrLabel(event.target.value)}
-                            className="border-white/10 bg-slate-900/60 text-white"
-                            placeholder="Casa / Taller"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-slate-200" htmlFor="street">Calle</Label>
-                          <Input
-                            id="street"
-                            value={street}
-                            onChange={(event) => setStreet(event.target.value)}
-                            className="border-white/10 bg-slate-900/60 text-white"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-slate-200" htmlFor="city">Ciudad</Label>
-                          <Input
-                            id="city"
-                            value={city}
-                            onChange={(event) => setCity(event.target.value)}
-                            className="border-white/10 bg-slate-900/60 text-white"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-slate-200" htmlFor="state">Estado</Label>
-                          <Input
-                            id="state"
-                            value={state}
-                            onChange={(event) => setState(event.target.value)}
-                            className="border-white/10 bg-slate-900/60 text-white"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-slate-200" htmlFor="postal">Código postal</Label>
-                          <Input
-                            id="postal"
-                            value={postalCode}
-                            onChange={(event) => setPostalCode(event.target.value)}
-                            className="border-white/10 bg-slate-900/60 text-white"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-slate-200" htmlFor="country">País</Label>
-                          <Input
-                            id="country"
-                            value={country}
-                            onChange={(event) => setCountry(event.target.value)}
-                            className="border-white/10 bg-slate-900/60 text-white"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label className="text-slate-200" htmlFor="reference">Referencia</Label>
-                          <Input
-                            id="reference"
-                            value={reference}
-                            onChange={(event) => setReference(event.target.value)}
-                            className="border-white/10 bg-slate-900/60 text-white"
-                          />
-                        </div>
-                      </form>
+                      {/* Divisor */}
+                      <div className="border-t border-white/10" />
 
-                      <div className="mt-6">
-                        <h3 className="text-sm font-semibold text-white mb-3">Tus direcciones guardadas</h3>
-                        <div className="grid gap-3">
-                          {addresses?.map((item) => (
-                            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/40 p-3 text-sm text-slate-200">
-                              <div>
-                                <p className="font-semibold text-white">{item.label ?? "Dirección"}</p>
-                                <p>{formatAddress(item)}</p>
-                                {item.reference && <p className="text-xs text-slate-400">{item.reference}</p>}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={item.isPrimary ? "rounded-full bg-orange-500/20 px-3 py-1 text-xs text-orange-200" : "rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200"}>
-                                  {item.isPrimary ? "Principal" : "Secundaria"}
-                                </span>
+                      {/* Lista de direcciones */}
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-white">Mis direcciones</h3>
+                        {addresses?.length ? (
+                          <div className="grid gap-2">
+                            {addresses.map((item) => (
+                              <div
+                                key={item.id}
+                                className="group flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/15 hover:bg-white/[0.05]"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-semibold text-white">{item.label ?? "Dirección"}</p>
+                                    {item.isPrimary && (
+                                      <span className="rounded-full bg-orange-500/30 px-2 py-0.5 text-xs font-semibold text-orange-200">
+                                        Principal
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-slate-400">{formatAddress(item)}</p>
+                                  {item.reference && (
+                                    <p className="text-xs text-slate-500 mt-1">📝 {item.reference}</p>
+                                  )}
+                                </div>
                                 {!item.isPrimary && (
                                   <Button
                                     type="button"
                                     size="sm"
-                                    className="bg-white/10 text-white hover:bg-white/20"
                                     onClick={() => handleSetPrimary(item.id)}
+                                    className="ml-3 bg-white/5 text-slate-300 hover:bg-white/10 opacity-0 transition-opacity group-hover:opacity-100"
                                   >
-                                    Hacer principal
+                                    Usar como principal
                                   </Button>
                                 )}
                               </div>
-                            </div>
-                          ))}
-                          {!addresses?.length && <p className="text-slate-400">Aún no tienes direcciones guardadas.</p>}
-                        </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">
+                            <p className="text-sm text-slate-400">
+                              📍 Aún no tienes direcciones guardadas. ¡Agrega una arriba!
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
