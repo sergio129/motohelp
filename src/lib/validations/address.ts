@@ -8,6 +8,8 @@ export const addressSchema = z.object({
   state: z.string().min(2).transform(sanitizeString),
   postalCode: z.string().min(3).transform(sanitizeString),
   country: z.string().min(2).transform(sanitizeString),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   reference: z.string().max(120).optional().transform((v) => v ? sanitizeString(v) : v),
 });
 

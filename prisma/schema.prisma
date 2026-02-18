@@ -78,6 +78,8 @@ model Address {
   state      String
   postalCode String
   country    String
+  latitude   Float?
+  longitude  Float?
   reference  String?
   isPrimary  Boolean  @default(false)
   createdAt  DateTime @default(now())
