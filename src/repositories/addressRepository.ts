@@ -41,4 +41,24 @@ export const addressRepository = {
       }),
     ]);
   },
+  update(userId: string, id: string, data: {
+    label?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    reference?: string;
+  }) {
+    return prisma.address.update({
+      where: { id, userId },
+      data,
+    });
+  },
+  delete(userId: string, id: string) {
+    return prisma.address.deleteMany({
+      where: { id, userId },
+    });
+  },
 };
+

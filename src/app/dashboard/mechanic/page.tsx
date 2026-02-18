@@ -99,6 +99,7 @@ export default function MechanicDashboard() {
   const [notes, setNotes] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [profileTab, setProfileTab] = useState<"personal" | "professional" | "addresses">("personal");
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
   async function handleAccept(id: string) {
     const loadingToast = toast.loading("Aceptando solicitud...");
@@ -251,18 +252,33 @@ export default function MechanicDashboard() {
     setSavingAddress(true);
 
     try {
-      const res = await fetch("/api/addresses", {
-        method: "POST",
+      const endpoint = editingAddressId ? "/api/addresses" : "/api/addresses";
+      const method = editingAddressId ? "PUT" : "POST";
+      const body = editingAddressId
+        ? JSON.stringify({
+            id: editingAddressId,
+            label: addrLabel || undefined,
+            street,
+            city,
+            state,
+            postalCode,
+            country,
+            reference: reference || undefined,
+          })
+        : JSON.stringify({
+            label: addrLabel || undefined,
+            street,
+            city,
+            state,
+            postalCode,
+            country,
+            reference: reference || undefined,
+          });
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          label: addrLabel || undefined,
-          street,
-          city,
-          state,
-          postalCode,
-          country,
-          reference: reference || undefined,
-        }),
+        body,
       });
 
       if (res.ok) {
@@ -273,7 +289,8 @@ export default function MechanicDashboard() {
         setPostalCode("");
         setCountry("");
         setReference("");
-        toast.success("✅ Dirección guardada exitosamente");
+        setEditingAddressId(null);
+        toast.success(editingAddressId ? "✅ Dirección actualizada" : "✅ Dirección guardada exitosamente");
         refreshAddresses();
       } else {
         const data = await res.json();
@@ -283,6 +300,50 @@ export default function MechanicDashboard() {
       toast.error("Error al guardar dirección");
     } finally {
       setSavingAddress(false);
+    }
+  }
+
+  function handleEditAddress(addr: Address) {
+    setAddrLabel(addr.label || "");
+    setStreet(addr.street);
+    setCity(addr.city);
+    setState(addr.state);
+    setPostalCode(addr.postalCode);
+    setCountry(addr.country);
+    setReference(addr.reference || "");
+    setEditingAddressId(addr.id);
+  }
+
+  function handleCancelEdit() {
+    setAddrLabel("");
+    setStreet("");
+    setCity("");
+    setState("");
+    setPostalCode("");
+    setCountry("");
+    setReference("");
+    setEditingAddressId(null);
+  }
+
+  async function handleDeleteAddress(id: string) {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta dirección?")) return;
+
+    try {
+      const res = await fetch("/api/addresses", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      if (res.ok) {
+        toast.success("✅ Dirección eliminada");
+        refreshAddresses();
+      } else {
+        const data = await res.json();
+        toast.error(data.message || "Error al eliminar dirección");
+      }
+    } catch (error) {
+      toast.error("Error al eliminar dirección");
     }
   }
 
@@ -720,16 +781,91 @@ export default function MechanicDashboard() {
 
                   {profileTab === "addresses" && (
                     <div className="space-y-6">
-                      {/* Formulario para agregar dirección */}
+                      {/* Tabla de direcciones */}
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-white">Mis direcciones</h3>
+                        {addresses?.length ? (
+                          <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02]">
+                            <table className="w-full text-sm">
+                              <thead className="border-b border-white/10 bg-white/5">
+                                <tr>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-300">Etiqueta</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-300">Dirección</th>
+                                  <th className="px-4 py-3 text-center font-semibold text-slate-300">Estado</th>
+                                  <th className="px-4 py-3 text-center font-semibold text-slate-300">Acciones</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/10">
+                                {addresses.map((item) => (
+                                  <tr key={item.id} className="hover:bg-white/[0.05] transition-colors">
+                                    <td className="px-4 py-3">{item.label || "Dirección"}</td>
+                                    <td className="px-4 py-3 text-slate-400">{formatAddress(item)}</td>
+                                    <td className="px-4 py-3 text-center">
+                                      {item.isPrimary && (
+                                        <span className="inline-block rounded-full bg-orange-500/30 px-2 py-1 text-xs font-semibold text-orange-200">
+                                          Principal
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                      <div className="flex items-center justify-center gap-2">
+                                        {!item.isPrimary && (
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => handleSetPrimary(item.id)}
+                                            className="text-xs bg-white/5 text-slate-300 hover:bg-white/10"
+                                          >
+                                            Usar principal
+                                          </Button>
+                                        )}
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          onClick={() => handleEditAddress(item)}
+                                          className="text-xs bg-white/5 text-slate-300 hover:bg-white/10"
+                                        >
+                                          Editar
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          onClick={() => handleDeleteAddress(item.id)}
+                                          className="text-xs bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                                        >
+                                          Eliminar
+                                        </Button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">
+                            <p className="text-sm text-slate-400">
+                              📍 Aún no tienes direcciones guardadas. ¡Agrega una abajo!
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Divisor */}
+                      <div className="border-t border-white/10" />
+
+                      {/* Formulario para agregar/editar dirección */}
                       <div className="space-y-4">
                         <div className="flex items-start gap-2">
                           <div className="mt-1 flex-shrink-0">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500/20 text-orange-300">
-                              +
+                              {editingAddressId ? "✎" : "+"}
                             </div>
                           </div>
                           <div>
-                            <h3 className="font-semibold text-white">Agregar nueva dirección</h3>
+                            <h3 className="font-semibold text-white">
+                              {editingAddressId ? "Editar dirección" : "Agregar nueva dirección"}
+                            </h3>
                             <p className="text-xs text-slate-400">Completa los datos y guarda</p>
                           </div>
                         </div>
@@ -807,68 +943,30 @@ export default function MechanicDashboard() {
                               className="border-white/10 bg-slate-900/40 text-sm text-white placeholder-slate-500"
                             />
                           </div>
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              if (street && city && state && postalCode && country) {
-                                handleAddAddress();
-                              }
-                            }}
-                            disabled={savingAddress}
-                            className="w-full bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold disabled:opacity-50"
-                          >
-                            {savingAddress ? "Guardando..." : "+ Agregar dirección"}
-                          </Button>
-                        </form>
-                      </div>
-
-                      {/* Divisor */}
-                      <div className="border-t border-white/10" />
-
-                      {/* Lista de direcciones */}
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-white">Mis direcciones</h3>
-                        {addresses?.length ? (
-                          <div className="grid gap-2">
-                            {addresses.map((item) => (
-                              <div
-                                key={item.id}
-                                className="group flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/15 hover:bg-white/[0.05]"
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                if (street && city && state && postalCode && country) {
+                                  handleAddAddress();
+                                }
+                              }}
+                              disabled={savingAddress}
+                              className="flex-1 bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold disabled:opacity-50"
+                            >
+                              {savingAddress ? "Guardando..." : editingAddressId ? "Actualizar dirección" : "+ Agregar dirección"}
+                            </Button>
+                            {editingAddressId && (
+                              <Button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                className="bg-white/10 text-white hover:bg-white/20"
                               >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-semibold text-white">{item.label ?? "Dirección"}</p>
-                                    {item.isPrimary && (
-                                      <span className="rounded-full bg-orange-500/30 px-2 py-0.5 text-xs font-semibold text-orange-200">
-                                        Principal
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-slate-400">{formatAddress(item)}</p>
-                                  {item.reference && (
-                                    <p className="text-xs text-slate-500 mt-1">📝 {item.reference}</p>
-                                  )}
-                                </div>
-                                {!item.isPrimary && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => handleSetPrimary(item.id)}
-                                    className="ml-3 bg-white/5 text-slate-300 hover:bg-white/10 opacity-0 transition-opacity group-hover:opacity-100"
-                                  >
-                                    Usar como principal
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
+                                Cancelar
+                              </Button>
+                            )}
                           </div>
-                        ) : (
-                          <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">
-                            <p className="text-sm text-slate-400">
-                              📍 Aún no tienes direcciones guardadas. ¡Agrega una arriba!
-                            </p>
-                          </div>
-                        )}
+                        </form>
                       </div>
                     </div>
                   )}
