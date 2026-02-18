@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createReviewSchema } from "@/lib/validations/review";
 import { reviewService } from "@/services/reviewService";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { NotificationService } from "@/services/notificationService";
 import { serviceRequestService } from "@/services/serviceRequestService";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Rate limiting: 10 reseñas por hora
+  const rateLimitCheck = checkRateLimit(request, 10, 60 * 60 * 1000);
+  if (!rateLimitCheck.allowed && rateLimitCheck.response) {
+    return rateLimitCheck.response;
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });

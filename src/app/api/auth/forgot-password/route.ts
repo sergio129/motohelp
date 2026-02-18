@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rateLimit";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
+  // Rate limiting: 3 solicitudes de recuperación por hora
+  const rateLimitCheck = checkRateLimit(request, 3, 60 * 60 * 1000);
+  if (!rateLimitCheck.allowed && rateLimitCheck.response) {
+    return rateLimitCheck.response;
+  }
+
   try {
     const { email } = await request.json();
 

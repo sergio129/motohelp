@@ -1,9 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { registerSchema } from "@/lib/validations/auth";
 import { authService } from "@/services/authService";
 import { NotificationService } from "@/services/notificationService";
+import { checkRateLimit } from "@/lib/rateLimit";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Rate limiting: 5 intentos de registro por hora
+  const rateLimitCheck = checkRateLimit(request, 5, 60 * 60 * 1000);
+  if (!rateLimitCheck.allowed && rateLimitCheck.response) {
+    return rateLimitCheck.response;
+  }
+
   try {
     const payload = await request.json();
     const data = registerSchema.parse(payload);

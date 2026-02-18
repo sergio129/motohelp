@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createServiceRequestSchema } from "@/lib/validations/serviceRequest";
 import { serviceTypeRepository } from "@/repositories/serviceTypeRepository";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { z } from "zod";
 import { mechanicProfileService } from "@/services/mechanicProfileService";
 import { serviceRequestService } from "@/services/serviceRequestService";
@@ -50,7 +51,13 @@ export async function GET(request: Request) {
   return NextResponse.json(requests);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Rate limiting: 20 solicitudes de servicio por hora
+  const rateLimitCheck = checkRateLimit(request, 20, 60 * 60 * 1000);
+  if (!rateLimitCheck.allowed && rateLimitCheck.response) {
+    return rateLimitCheck.response;
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: "No autorizado" }, { status: 401 });

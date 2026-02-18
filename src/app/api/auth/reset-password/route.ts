@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rateLimit";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
+  // Rate limiting: 5 intentos de reseteo por hora
+  const rateLimitCheck = checkRateLimit(request, 5, 60 * 60 * 1000);
+  if (!rateLimitCheck.allowed && rateLimitCheck.response) {
+    return rateLimitCheck.response;
+  }
+
   try {
     const { token, password } = await request.json();
 
