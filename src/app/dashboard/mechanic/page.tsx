@@ -100,6 +100,7 @@ export default function MechanicDashboard() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [profileTab, setProfileTab] = useState<"personal" | "professional" | "addresses">("personal");
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
 
   async function handleAccept(id: string) {
     const loadingToast = toast.loading("Aceptando solicitud...");
@@ -326,18 +327,23 @@ export default function MechanicDashboard() {
   }
 
   async function handleDeleteAddress(id: string) {
-    if (!confirm("¿Estás seguro de que deseas eliminar esta dirección?")) return;
+    setDeletingAddressId(id);
+  }
+
+  async function confirmDeleteAddress() {
+    if (!deletingAddressId) return;
 
     try {
       const res = await fetch("/api/addresses", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id: deletingAddressId }),
       });
 
       if (res.ok) {
         toast.success("✅ Dirección eliminada");
         refreshAddresses();
+        setDeletingAddressId(null);
       } else {
         const data = await res.json();
         toast.error(data.message || "Error al eliminar dirección");
@@ -621,7 +627,7 @@ export default function MechanicDashboard() {
 
       {isProfileOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
+          <div className="w-full max-w-4xl max-h-[95vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 sm:px-6 py-4">
@@ -870,77 +876,77 @@ export default function MechanicDashboard() {
                           </div>
                         </div>
 
-                        <form className="space-y-4 rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/50 to-slate-950 p-5">
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <div className="space-y-2">
+                        <form className="space-y-3 rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/50 to-slate-950 p-4">
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <div className="space-y-1">
                               <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="addrLabel">Etiqueta</Label>
                               <Input
                                 id="addrLabel"
                                 value={addrLabel}
                                 onChange={(event) => setAddrLabel(event.target.value)}
-                                className="border-white/10 bg-slate-900/40 text-sm text-white placeholder-slate-500"
+                                className="border-white/10 bg-slate-900/40 text-xs text-white placeholder-slate-500"
                                 placeholder="ej: Casa, Taller, Oficina"
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="street">Calle *</Label>
                               <Input
                                 id="street"
                                 value={street}
                                 onChange={(event) => setStreet(event.target.value)}
-                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                className="border-white/10 bg-slate-900/40 text-xs text-white"
                                 required
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="city">Ciudad *</Label>
                               <Input
                                 id="city"
                                 value={city}
                                 onChange={(event) => setCity(event.target.value)}
-                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                className="border-white/10 bg-slate-900/40 text-xs text-white"
                                 required
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="state">Estado *</Label>
                               <Input
                                 id="state"
                                 value={state}
                                 onChange={(event) => setState(event.target.value)}
-                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                className="border-white/10 bg-slate-900/40 text-xs text-white"
                                 required
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="postal">Código postal *</Label>
                               <Input
                                 id="postal"
                                 value={postalCode}
                                 onChange={(event) => setPostalCode(event.target.value)}
-                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                className="border-white/10 bg-slate-900/40 text-xs text-white"
                                 required
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="country">País *</Label>
                               <Input
                                 id="country"
                                 value={country}
                                 onChange={(event) => setCountry(event.target.value)}
-                                className="border-white/10 bg-slate-900/40 text-sm text-white"
+                                className="border-white/10 bg-slate-900/40 text-xs text-white"
                                 required
                               />
                             </div>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             <Label className="text-xs font-semibold text-slate-300 uppercase" htmlFor="reference">Referencia (opcional)</Label>
                             <Input
                               id="reference"
                               value={reference}
                               onChange={(event) => setReference(event.target.value)}
                               placeholder="ej: Puerta azul, Apto 301"
-                              className="border-white/10 bg-slate-900/40 text-sm text-white placeholder-slate-500"
+                              className="border-white/10 bg-slate-900/40 text-xs text-white placeholder-slate-500"
                             />
                           </div>
                           <div className="flex gap-2">
@@ -990,6 +996,37 @@ export default function MechanicDashboard() {
                   className="bg-orange-500 text-slate-950 hover:bg-orange-400 disabled:opacity-50"
                 >
                   {savingProfile ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación para eliminar dirección */}
+      {deletingAddressId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40 p-6">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Eliminar dirección</h3>
+                <p className="text-sm text-slate-400 mt-1">¿Estás seguro de que deseas eliminar esta dirección? Esta acción no se puede deshacer.</p>
+              </div>
+              <div className="flex gap-3 justify-end pt-4 border-t border-white/10">
+                <Button
+                  type="button"
+                  variant="default"
+                  className="bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => setDeletingAddressId(null)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={confirmDeleteAddress}
+                  className="bg-red-500 text-white hover:bg-red-600"
+                >
+                  Eliminar
                 </Button>
               </div>
             </div>
