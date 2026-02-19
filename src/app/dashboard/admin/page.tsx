@@ -762,32 +762,56 @@ export default function AdminDashboard() {
                                 </span>
                               </td>
                               <td className="px-4 py-3">
-                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                <div className="flex items-center justify-center gap-1">
                                   {isEditing ? (
                                     <>
-                                      <Button size="sm" className="bg-green-500 text-white hover:bg-green-600" onClick={handleSaveEdit}>
-                                        Guardar
-                                      </Button>
-                                      <Button size="sm" variant="default" className="bg-white/10 text-white hover:bg-white/20" onClick={handleCancelEdit}>
-                                        Cancelar
-                                      </Button>
+                                      <button
+                                        type="button"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
+                                        onClick={handleSaveEdit}
+                                        title="Guardar"
+                                      >
+                                        ✓
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-white/10 text-white hover:bg-white/20 transition-colors"
+                                        onClick={handleCancelEdit}
+                                        title="Cancelar"
+                                      >
+                                        ✕
+                                      </button>
                                     </>
                                   ) : (
                                     <>
-                                      <Button size="sm" variant="default" className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30" onClick={() => handleStartEdit(service)}>
-                                        Editar
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="default"
-                                        className={service.active ? "bg-white/10 text-white hover:bg-white/20" : "bg-orange-500 text-slate-950 hover:bg-orange-400"}
-                                        onClick={() => handleToggleService(service.id, !service.active)}
+                                      <button
+                                        type="button"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-blue-500/30 text-blue-300 hover:bg-blue-500/50 transition-colors"
+                                        onClick={() => handleStartEdit(service)}
+                                        title="Editar"
                                       >
-                                        {service.active ? "Desactivar" : "Activar"}
-                                      </Button>
-                                      <Button size="sm" variant="default" className="bg-red-500/20 text-red-300 hover:bg-red-500/30" onClick={() => handleDeleteService(service.id, service.name)}>
-                                        Eliminar
-                                      </Button>
+                                        ✏️
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={`inline-flex items-center justify-center w-7 h-7 rounded transition-colors ${
+                                          service.active 
+                                            ? "bg-white/10 text-white hover:bg-white/20" 
+                                            : "bg-orange-500/30 text-orange-300 hover:bg-orange-500/50"
+                                        }`}
+                                        onClick={() => handleToggleService(service.id, !service.active)}
+                                        title={service.active ? "Desactivar" : "Activar"}
+                                      >
+                                        {service.active ? "◉" : "◯"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-red-500/30 text-red-300 hover:bg-red-500/50 transition-colors"
+                                        onClick={() => handleDeleteService(service.id, service.name)}
+                                        title="Eliminar"
+                                      >
+                                        🗑️
+                                      </button>
                                     </>
                                   )}
                                 </div>
