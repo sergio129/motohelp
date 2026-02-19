@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { fetcher } from "@/lib/fetcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ActionIconButton } from "@/components/ActionIconButton";
 
 type User = {
   id: string;
@@ -765,53 +766,39 @@ export default function AdminDashboard() {
                                 <div className="flex items-center justify-center gap-1">
                                   {isEditing ? (
                                     <>
-                                      <button
-                                        type="button"
-                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
+                                      <ActionIconButton
+                                        icon="SAVE"
                                         onClick={handleSaveEdit}
                                         title="Guardar"
-                                      >
-                                        ✓
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-white/10 text-white hover:bg-white/20 transition-colors"
+                                        style="SAVE"
+                                      />
+                                      <ActionIconButton
+                                        icon="CANCEL"
                                         onClick={handleCancelEdit}
                                         title="Cancelar"
-                                      >
-                                        ✕
-                                      </button>
+                                        style="CANCEL"
+                                      />
                                     </>
                                   ) : (
                                     <>
-                                      <button
-                                        type="button"
-                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-blue-500/30 text-blue-300 hover:bg-blue-500/50 transition-colors"
+                                      <ActionIconButton
+                                        icon="EDIT"
                                         onClick={() => handleStartEdit(service)}
                                         title="Editar"
-                                      >
-                                        ✏️
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className={`inline-flex items-center justify-center w-7 h-7 rounded transition-colors ${
-                                          service.active 
-                                            ? "bg-white/10 text-white hover:bg-white/20" 
-                                            : "bg-orange-500/30 text-orange-300 hover:bg-orange-500/50"
-                                        }`}
+                                        style="EDIT"
+                                      />
+                                      <ActionIconButton
+                                        icon={service.active ? "ACTIVE" : "INACTIVE"}
                                         onClick={() => handleToggleService(service.id, !service.active)}
                                         title={service.active ? "Desactivar" : "Activar"}
-                                      >
-                                        {service.active ? "◉" : "◯"}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-red-500/30 text-red-300 hover:bg-red-500/50 transition-colors"
+                                        style={service.active ? "ACTIVE" : "INACTIVE"}
+                                      />
+                                      <ActionIconButton
+                                        icon="DELETE"
                                         onClick={() => handleDeleteService(service.id, service.name)}
                                         title="Eliminar"
-                                      >
-                                        🗑️
-                                      </button>
+                                        style="DELETE"
+                                      />
                                     </>
                                   )}
                                 </div>
@@ -891,13 +878,12 @@ export default function AdminDashboard() {
                       <span className="inline-flex rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-semibold text-yellow-200">
                         Pendiente
                       </span>
-                      <Button
-                        size="sm"
-                        className="bg-orange-500 text-slate-950 hover:bg-orange-400"
+                      <ActionIconButton
+                        icon="CHECK"
                         onClick={() => handleVerify(profile.userId, true)}
-                      >
-                        Aprobar
-                      </Button>
+                        title="Aprobar mecánico"
+                        style="SAVE"
+                      />
                       {profile.documentUrl && (
                         <a className="text-xs underline text-slate-200" href={profile.documentUrl} target="_blank" rel="noreferrer">
                           Ver doc
@@ -932,14 +918,12 @@ export default function AdminDashboard() {
                       <span className="inline-flex rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-200">
                         Verificado
                       </span>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="bg-white/10 text-white hover:bg-white/20"
+                      <ActionIconButton
+                        icon="X"
                         onClick={() => handleVerify(profile.userId, false)}
-                      >
-                        Desverificar
-                      </Button>
+                        title="Desverificar"
+                        style="DELETE"
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -982,22 +966,27 @@ export default function AdminDashboard() {
                           <span className={statusBadge(request.status)}>{request.status}</span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <div className="flex items-center justify-center gap-2 flex-wrap">
-                            <Button 
-                              size="sm" 
-                              className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-xs"
+                          <div className="flex items-center justify-center gap-1">
+                            <ActionIconButton
+                              icon="VIEW"
                               onClick={() => setSelectedServiceRequest(request)}
-                            >
-                              Ver detalles
-                            </Button>
+                              title="Ver detalles"
+                              style="VIEW"
+                            />
                             {request.status !== "FINALIZADO" && request.status !== "CANCELADO" && (
                               <>
-                                <Button size="sm" className="bg-orange-500 text-slate-950 hover:bg-orange-400 text-xs" onClick={() => handleStatus(request.id, "FINALIZADO")}>
-                                  Finalizar
-                                </Button>
-                                <Button variant="default" size="sm" className="bg-white/10 text-white hover:bg-white/20 text-xs" onClick={() => handleStatus(request.id, "CANCELADO")}>
-                                  Cancelar
-                                </Button>
+                                <ActionIconButton
+                                  icon="CHECK"
+                                  onClick={() => handleStatus(request.id, "FINALIZADO")}
+                                  title="Finalizar"
+                                  style="SAVE"
+                                />
+                                <ActionIconButton
+                                  icon="X"
+                                  onClick={() => handleStatus(request.id, "CANCELADO")}
+                                  title="Cancelar"
+                                  style="CANCEL"
+                                />
                               </>
                             )}
                           </div>
