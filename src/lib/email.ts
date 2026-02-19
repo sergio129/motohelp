@@ -63,7 +63,30 @@ export type EmailOptions = {
 };
 
 export async function sendEmail(options: EmailOptions, retries = 3) {
-  // Intento principal: SMTP (más estable en Vercel)
+  // Intento principal: Resend (RÁPIDO - ~500ms)
+  if (resend) {
+    try {
+      console.log(`📧 Intento Resend (rápido) a ${options.to}`);
+      const result = await resend.emails.send({
+        from: "MotoHelp <noreply@resend.dev>",
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
+
+      if (result.error) {
+        throw new Error(`Resend error: ${result.error.message}`);
+      }
+
+      console.log("✅ Email enviado via Resend:", result.data?.id);
+      return { success: true, messageId: result.data?.id };
+    } catch (error: any) {
+      console.error(`⚠️ Resend falló, intentando SMTP fallback:`, error?.message);
+    }
+  }
+
+  // Fallback: SMTP (más confiable pero lento)
   if (process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
     let lastError;
     const presets = getSmtpPresets();
@@ -104,31 +127,8 @@ export async function sendEmail(options: EmailOptions, retries = 3) {
     console.error("❌ SMTP agotó reintentos:", lastError?.message);
   }
 
-  // Fallback: Intentar Resend como último recurso
-  if (resend) {
-    try {
-      console.log(`📧 Intento Resend como fallback para ${options.to}`);
-      const result = await resend.emails.send({
-        from: "MotoHelp <noreply@resend.dev>",
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      });
-
-      if (result.error) {
-        throw new Error(`Resend error: ${result.error.message}`);
-      }
-
-      console.log("✅ Email enviado via Resend:", result.data?.id);
-      return { success: true, messageId: result.data?.id };
-    } catch (error: any) {
-      console.error(`❌ Resend también falló:`, error?.message);
-    }
-  }
-
   // Si llegamos aquí, ambos fallaron
-  const error = new Error("No fue posible enviar email. SMTP y Resend agotados.");
+  const error = new Error("No fue posible enviar email. Resend y SMTP agotados.");
   console.error("❌ Error final:", error.message);
   return { success: false, error };
 }
