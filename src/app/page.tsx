@@ -2,11 +2,27 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetcher } from "@/lib/fetcher";
+
+type LandingStats = {
+  totalRequests: number;
+  totalMechanics: number;
+  averageRating: string;
+  testimonials: Array<{
+    name: string;
+    role: string;
+    comment: string;
+    rating: number;
+    service: string;
+  }>;
+};
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"clientes" | "mecanicos" | "admin">("clientes");
+  const { data: stats } = useSWR<LandingStats>("/api/landing/stats", fetcher);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950">
@@ -19,22 +35,22 @@ export default function Home() {
         {/* HERO SECTION */}
         <header className="flex flex-col gap-8 max-w-6xl mx-auto w-full">
           <span className="w-fit rounded-full border border-white/10 bg-white/10 px-4 py-1 text-sm font-semibold uppercase tracking-[0.2em] text-orange-200">
-            ⚡ MVP MotoHelp - Mecánica a Domicilio
+            🏍️ MotoHelp - Mecánica a Domicilio para tu Moto
           </span>
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-            Conecta con{" "}
+            Mantén tu{" "}
             <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-              mecánicos verificados
+              moto en perfectas condiciones
             </span>
-            {" "}en minutos.
+            {" "}sin dejar tu casa.
           </h1>
           <p className="max-w-3xl text-xl text-slate-200 leading-relaxed">
-            Olvídate de las gasolineras. Solicita mantenimiento, reparaciones y servicios de emergencia 
-            sin moverte de casa. Profesionales verificados, transparencia total y servicio con alma motera.
+            Especialistas en motos disponibles a domicilio. Mantenimiento, reparaciones y emergencias mecánicas 
+            en minutos. Profesionales verificados con experiencia en todas las marcas y modelos de Latinoamérica.
           </p>
           <div className="flex flex-wrap gap-4">
             <Button asChild size="lg" className="bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold px-8 py-6 text-lg">
-              <Link href="/auth/sign-up">Crear cuenta gratis</Link>
+              <Link href="/auth/sign-up">Solicitar servicio ahora</Link>
             </Button>
             <Button
               asChild
@@ -48,8 +64,8 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
             {[
               { icon: "⚡", text: "Respuesta en <15 min" },
-              { icon: "✓", text: "Mecánicos verificados" },
-              { icon: "🗺️", text: "Servicio a domicilio" },
+              { icon: "✓", text: "Especialistas verificados" },
+              { icon: "🏍️", text: "Para todas las motos" },
               { icon: "💳", text: "Pago seguro" },
             ].map((item) => (
               <span key={item.text} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10 transition-colors">
@@ -59,22 +75,22 @@ export default function Home() {
           </div>
         </header>
 
-        {/* SERVICIOS & REPUESTOS GALLERY */}
+        {/* SERVICIOS ESPECIALIZADOS EN MOTOS */}
         <section className="max-w-6xl mx-auto w-full">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">Servicios principales</h2>
-            <p className="text-slate-300 text-lg">Desde cambios de aceite hasta revisiones completas</p>
+            <h2 className="text-4xl font-bold text-white mb-4">Servicios para tu Moto</h2>
+            <p className="text-slate-300 text-lg">Especialistas en mantenimiento y reparación de motos</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { name: "Cambio de aceite", emoji: "🛢️", desc: "Mantenimiento básico" },
-              { name: "Reparación de frenos", emoji: "🛑", desc: "Seguridad garantizada" },
-              { name: "Alineación", emoji: "⚙️", desc: "Precisión técnica" },
-              { name: "Revisión preventiva", emoji: "🔍", desc: "Diagnóstico completo" },
-              { name: "Cambios de batería", emoji: "🔋", desc: "Potencia renovada" },
-              { name: "Reparación de suspensión", emoji: "🏎️", desc: "Comodidad en ruta" },
-              { name: "Mecánica general", emoji: "🔧", desc: "Especialistas variados" },
-              { name: "Emergencias", emoji: "🚨", desc: "24/7 disponible" },
+              { name: "Cambio de aceite", emoji: "🛢️", desc: "Mantenimiento premium" },
+              { name: "Revisión de frenos", emoji: "🛑", desc: "Seguridad garantizada" },
+              { name: "Ajuste de cadena", emoji: "⛓️", desc: "Precisión técnica" },
+              { name: "Cambio de bujías", emoji: "🔌", desc: "Mejor rendimiento" },
+              { name: "Cambio de batería", emoji: "🔋", desc: "Potencia renovada" },
+              { name: "Revisión de suspensión", emoji: "🏍️", desc: "Comodidad en ruta" },
+              { name: "Reparación de motor", emoji: "⚙️", desc: "Especialistas expertos" },
+              { name: "Emergencias 24/7", emoji: "🚨", desc: "Siempre disponible" },
             ].map((service) => (
               <Card
                 key={service.name}
@@ -94,14 +110,14 @@ export default function Home() {
         <section className="max-w-6xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-4">¿Cómo funciona?</h2>
-            <p className="text-slate-300 text-lg">3 pasos simples para conectar con un mecánico</p>
+            <p className="text-slate-300 text-lg">3 pasos simples para conectar con un mecánico especialista</p>
           </div>
 
           <div className="flex gap-4 mb-8 justify-center flex-wrap">
             {[
-              { id: "clientes", label: "👤 Para Clientes", icon: "📲" },
-              { id: "mecanicos", label: "🔧 Para Mecánicos", icon: "✅" },
-              { id: "admin", label: "⚙️ Para Admin", icon: "📊" },
+              { id: "clientes", label: "👤 Motociclistas", icon: "🏍️" },
+              { id: "mecanicos", label: "🔧 Mecánicos", icon: "✅" },
+              { id: "admin", label: "⚙️ Administración", icon: "📊" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -123,28 +139,28 @@ export default function Home() {
                 <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/20 to-orange-500/5 text-white">
                   <CardHeader>
                     <div className="text-5xl mb-4">1️⃣</div>
-                    <CardTitle>Crea tu solicitud</CardTitle>
+                    <CardTitle>Describe el problema</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Describe tu problema, elige el tipo de servicio y selecciona tu ubicación. Toma menos de 2 minutos.
+                    Cuéntanos qué necesita tu moto, dónde estás y cuándo. Toma menos de 2 minutos con nuestra app.
                   </CardContent>
                 </Card>
                 <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/20 to-orange-500/5 text-white">
                   <CardHeader>
                     <div className="text-5xl mb-4">2️⃣</div>
-                    <CardTitle>Recibe propuestas</CardTitle>
+                    <CardTitle>Conecta con especialista</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Mecánicos verificados cercanos verán tu solicitud y podrán aceptarla en tiempo real.
+                    Mecánicos certificados verán tu solicitud y podrán llegar a tu domicilio en minutos.
                   </CardContent>
                 </Card>
                 <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/20 to-orange-500/5 text-white">
                   <CardHeader>
                     <div className="text-5xl mb-4">3️⃣</div>
-                    <CardTitle>Servicio completado</CardTitle>
+                    <CardTitle>Moto lista y pagada</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Monitorea en tiempo real, paga de forma segura y califica al mecánico.
+                    Monitorea en tiempo real, paga de forma segura y califica al mecánico que revisó tu moto.
                   </CardContent>
                 </Card>
               </>
@@ -155,19 +171,19 @@ export default function Home() {
                 <Card className="border-red-500/30 bg-gradient-to-br from-red-500/20 to-red-500/5 text-white">
                   <CardHeader>
                     <div className="text-5xl mb-4">1️⃣</div>
-                    <CardTitle>Regístrate verificado</CardTitle>
+                    <CardTitle>Únete como especialista</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Completa tu perfil, sube documentación y espera aprobación del admin.
+                    Regístrate, sube tu certificación y experiencia. Espera verificación en 24-48 horas.
                   </CardContent>
                 </Card>
                 <Card className="border-red-500/30 bg-gradient-to-br from-red-500/20 to-red-500/5 text-white">
                   <CardHeader>
                     <div className="text-5xl mb-4">2️⃣</div>
-                    <CardTitle>Acepta trabajos</CardTitle>
+                    <CardTitle>Acepta trabajos cercanos</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Recibe notificaciones de nuevas solicitudes cercanas a tu zona y elige cuáles aceptar.
+                    Recibe notificaciones de motos que necesitan servicio en tu zona. Elige cuáles aceptar.
                   </CardContent>
                 </Card>
                 <Card className="border-red-500/30 bg-gradient-to-br from-red-500/20 to-red-500/5 text-white">
@@ -176,7 +192,7 @@ export default function Home() {
                     <CardTitle>Cobra y crece</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Actualiza estado, recibe pagos seguros y construye tu reputación.
+                    Cobra pagos seguros, construye reputación y gana más con buenas calificaciones.
                   </CardContent>
                 </Card>
               </>
@@ -187,10 +203,10 @@ export default function Home() {
                 <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-amber-500/5 text-white">
                   <CardHeader>
                     <div className="text-5xl mb-4">1️⃣</div>
-                    <CardTitle>Verifica mecánicos</CardTitle>
+                    <CardTitle>Verifica especialistas</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Revisa perfiles, documentos y aprueba mecánicos confiables para la plataforma.
+                    Revisa credenciales, experiencia y certificaciones de mecánicos para garantizar calidad.
                   </CardContent>
                 </Card>
                 <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-amber-500/5 text-white">
@@ -199,16 +215,16 @@ export default function Home() {
                     <CardTitle>Supervisa servicios</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Monitorea solicitudes activas, resuelve conflictos y asegura la calidad.
+                    Monitorea solicitudes, resuelve conflictos y asegura que cada moto reciba mejor servicio.
                   </CardContent>
                 </Card>
                 <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-amber-500/5 text-white">
                   <CardHeader>
                     <div className="text-5xl mb-4">3️⃣</div>
-                    <CardTitle>Analiza métricas</CardTitle>
+                    <CardTitle>Analiza plataforma</CardTitle>
                   </CardHeader>
                   <CardContent className="text-slate-200">
-                    Accede a dashboards, reportes y datos para optimizar la plataforma.
+                    Accede a dashboards con datos de servicios, mecánicos y motociclistas para optimizar.
                   </CardContent>
                 </Card>
               </>
@@ -216,73 +232,97 @@ export default function Home() {
           </div>
         </section>
 
-        {/* TESTIMONIOS */}
+        {/* TESTIMONIOS REALES */}
         <section className="max-w-6xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-4">Lo que dicen nuestros usuarios</h2>
-            <p className="text-slate-300 text-lg">Experiencias reales de clientes y mecánicos</p>
+            <p className="text-slate-300 text-lg">Experiencias reales de motociclistas y mecánicos</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                name: "Sergio Luis",
-                role: "Cliente",
-                comment: "Solicité cambio de aceite a domicilio y en 30 min estaba listo. Excelente servicio.",
-                rating: "⭐⭐⭐⭐⭐",
-              },
-              {
-                name: "Juan Romero",
-                role: "Mecánico",
-                comment: "Plataforma muy intuitiva. Recibo solicitudes cercanas y realizo más trabajos.",
-                rating: "⭐⭐⭐⭐⭐",
-              },
-              {
-                name: "Carlos Admin",
-                role: "Administrador",
-                comment: "Dashboard completo. Fácil verificar mecánicos y supervisar servicios.",
-                rating: "⭐⭐⭐⭐⭐",
-              },
-            ].map((testimonial) => (
-              <Card key={testimonial.name} className="border-white/10 bg-white/5 text-white">
-                <CardContent className="p-6">
-                  <div className="mb-4">{testimonial.rating}</div>
-                  <p className="text-slate-200 mb-4 italic">"{testimonial.comment}"</p>
-                  <div>
-                    <p className="font-semibold text-white">{testimonial.name}</p>
-                    <p className="text-sm text-orange-300">{testimonial.role}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {stats?.testimonials && stats.testimonials.length > 0 ? (
+              stats.testimonials.map((testimonial, idx) => (
+                <Card key={idx} className="border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-6">
+                    <div className="mb-4">
+                      {"⭐".repeat(testimonial.rating)}
+                    </div>
+                    <p className="text-slate-200 mb-4 italic">"{testimonial.comment}"</p>
+                    <div>
+                      <p className="font-semibold text-white">{testimonial.name}</p>
+                      <p className="text-sm text-orange-300">{testimonial.service}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <>
+                <Card className="border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-6">
+                    <div className="mb-4">⭐⭐⭐⭐⭐</div>
+                    <p className="text-slate-200 mb-4 italic">"Pedí cambio de aceite a domicilio y en 30 min mi moto estaba lista. Excelente servicio del mecánico."</p>
+                    <div>
+                      <p className="font-semibold text-white">Sergio Luis</p>
+                      <p className="text-sm text-orange-300">Cambio de aceite</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-6">
+                    <div className="mb-4">⭐⭐⭐⭐⭐</div>
+                    <p className="text-slate-200 mb-4 italic">"Plataforma intuitiva. Recibo solicitudes cercanas de motos que necesitan servicio y realizo más trabajos."</p>
+                    <div>
+                      <p className="font-semibold text-white">Juan Romero</p>
+                      <p className="text-sm text-orange-300">Mecánico verificado</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-6">
+                    <div className="mb-4">⭐⭐⭐⭐⭐</div>
+                    <p className="text-slate-200 mb-4 italic">"Dashboard completo y fácil de usar para verificar mecánicos y supervisar servicios de motos."</p>
+                    <div>
+                      <p className="font-semibold text-white">Carlos Admin</p>
+                      <p className="text-sm text-orange-300">Administrador</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         </section>
 
-        {/* STATS */}
+        {/* STATS REALES */}
         <section className="max-w-6xl mx-auto w-full bg-gradient-to-r from-orange-500/10 via-red-500/10 to-amber-500/10 rounded-3xl border border-white/10 p-12">
           <div className="grid md:grid-cols-4 gap-8 text-center">
-            {[
-              { number: "500+", label: "Solicitudes completadas" },
-              { number: "150+", label: "Mecánicos verificados" },
-              { number: "4.8★", label: "Calificación promedio" },
-              { number: "24/7", label: "Soporte disponible" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-4xl font-bold text-orange-400 mb-2">{stat.number}</div>
-                <p className="text-slate-300">{stat.label}</p>
-              </div>
-            ))}
+            <div>
+              <div className="text-4xl font-bold text-orange-400 mb-2">{stats?.totalRequests || "0"}+</div>
+              <p className="text-slate-300">Servicios completados para motos</p>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-orange-400 mb-2">{stats?.totalMechanics || "0"}+</div>
+              <p className="text-slate-300">Mecánicos especialistas verificados</p>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-orange-400 mb-2">{stats?.averageRating || "4.8"}★</div>
+              <p className="text-slate-300">Calificación promedio</p>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-orange-400 mb-2">24/7</div>
+              <p className="text-slate-300">Soporte disponible</p>
+            </div>
           </div>
         </section>
 
         {/* FINAL CTA */}
         <section className="max-w-6xl mx-auto w-full rounded-3xl border border-white/10 bg-gradient-to-r from-white/5 via-orange-500/20 to-white/5 p-12 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">¿Listo para conectar con el mecánico perfecto?</h2>
+          <h2 className="text-4xl font-bold text-white mb-4">¿Tu moto necesita servicio? ¡Estamos aquí!</h2>
           <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">
-            Únete a cientos de usuarios que ya experimentan servicio mecánico a domicilio rápido, confiable y con profesionales verificados.
+            Conecta en minutos con mecánicos especializados en motos. Servicio a domicilio, profesionales verificados 
+            y completamente seguro. ¡Ahora sí, mecánica sin complicaciones!
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Button asChild size="lg" className="bg-orange-500 text-slate-950 hover:bg-orange-400 font-semibold px-8">
-              <Link href="/auth/sign-up">Crear cuenta ahora</Link>
+              <Link href="/auth/sign-up">Crear cuenta y solicitar</Link>
             </Button>
             <Button
               asChild
