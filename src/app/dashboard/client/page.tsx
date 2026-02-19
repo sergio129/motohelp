@@ -135,6 +135,13 @@ export default function ClientDashboard() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+
+    const parsedScheduledAt = new Date(scheduledAt);
+    if (Number.isNaN(parsedScheduledAt.getTime())) {
+      toast.error("Selecciona una fecha y hora válidas");
+      return;
+    }
+
     setLoading(true);
     const loadingToast = toast.loading("Creando solicitud...");
 
@@ -142,7 +149,13 @@ export default function ClientDashboard() {
       const res = await fetch("/api/service-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ serviceTypeId, description, address, scheduledAt }),
+        body: JSON.stringify({
+          serviceTypeId,
+          description,
+          address,
+          // datetime-local llega sin zona horaria; se normaliza a UTC para evitar desfases en Vercel
+          scheduledAt: parsedScheduledAt.toISOString(),
+        }),
       });
 
       if (res.ok) {
