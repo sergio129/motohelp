@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { emailPasswordReset } from "./emailTemplates";
-import { resend } from "./resendClient";
+import { resend, resendFromEmail } from "./resendClient";
 
 const smtpHost = (process.env.SMTP_HOST || "smtp.gmail.com").trim();
 const smtpPort = Number.parseInt((process.env.SMTP_PORT || "587").trim(), 10);
@@ -68,7 +68,7 @@ export async function sendEmail(options: EmailOptions, retries = 3) {
     try {
       console.log(`📧 Intento Resend enviando email a ${options.to}`);
       const result = await resend.emails.send({
-        from: `MotoHelp <sanayaromero62@gmail.com>`, // Cambiar a tu dominio verificado
+        from: `MotoHelp <${resendFromEmail}>`,
         to: options.to,
         subject: options.subject,
         html: options.html,
