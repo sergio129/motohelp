@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { emailPasswordReset } from "./emailTemplates";
 
 const smtpHost = (process.env.SMTP_HOST || "smtp.gmail.com").trim();
@@ -31,7 +32,7 @@ function getSmtpPresets(): SmtpPreset[] {
 }
 
 function createTransporter(preset: SmtpPreset) {
-  return nodemailer.createTransport({
+  const transportOptions: SMTPTransport.Options = {
     host: smtpHost,
     port: preset.port,
     secure: preset.secure,
@@ -39,11 +40,6 @@ function createTransporter(preset: SmtpPreset) {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASSWORD,
     },
-    pool: false,
-    maxConnections: 1,
-    maxMessages: 3,
-    rateDelta: 1000,
-    rateLimit: 1,
     connectionTimeout: 20000,
     greetingTimeout: 20000,
     socketTimeout: 30000,
@@ -53,7 +49,9 @@ function createTransporter(preset: SmtpPreset) {
       servername: smtpHost,
       minVersion: "TLSv1.2",
     },
-  });
+  };
+
+  return nodemailer.createTransport(transportOptions);
 }
 
 export type EmailOptions = {
