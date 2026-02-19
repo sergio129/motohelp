@@ -63,6 +63,17 @@ smtp.gmail.com
 
 ---
 
+### 5.1 SMTP_SECURE
+**Valor recomendado:**
+- `false` si usas `SMTP_PORT=587`
+- `true` si usas `SMTP_PORT=465`
+
+**Environments:** Production
+
+**⚠️ NOTA:** Debe coincidir con el puerto SMTP. Si no coincide, puede aparecer el error `Greeting never received`.
+
+---
+
 ### 6. SMTP_USER
 **Valor:**
 ```
@@ -141,6 +152,7 @@ FWobJcidebu6bz8AVU2MjCXYzwfqNUrL6Qcqml1IGmE=
 - [ ] NEXTAUTH_SECRET configurada
 - [ ] SMTP_HOST configurada
 - [ ] SMTP_PORT configurada
+- [ ] SMTP_SECURE configurada (true para 465 / false para 587)
 - [ ] SMTP_USER configurada
 - [ ] SMTP_PASSWORD configurada (contraseña de aplicación de Gmail)
 - [ ] ADMIN_EMAIL configurada

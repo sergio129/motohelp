@@ -1,24 +1,60 @@
 import nodemailer from "nodemailer";
 import { emailPasswordReset } from "./emailTemplates";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-  // Configuración mejorada para evitar cierres de conexión
-  pool: true, // Usar conexiones en pool
-  maxConnections: 1, // Limitar a 1 conexión simultánea para Gmail
-  maxMessages: 3, // Máximo 3 mensajes por conexión
-  rateDelta: 1000, // 1 segundo entre mensajes
-  rateLimit: 1, // 1 mensaje por segundo
-  connectionTimeout: 10000, // 10 segundos timeout de conexión
-  greetingTimeout: 10000, // 10 segundos para greeting
-  socketTimeout: 30000, // 30 segundos socket timeout
-});
+const smtpHost = (process.env.SMTP_HOST || "smtp.gmail.com").trim();
+const smtpPort = Number.parseInt((process.env.SMTP_PORT || "587").trim(), 10);
+const smtpSecureEnv = process.env.SMTP_SECURE?.trim().toLowerCase();
+const smtpSecure = smtpSecureEnv
+  ? smtpSecureEnv === "true"
+  : smtpPort === 465;
+
+type SmtpPreset = {
+  port: number;
+  secure: boolean;
+  label: string;
+};
+
+function getSmtpPresets(): SmtpPreset[] {
+  const primary: SmtpPreset = {
+    port: smtpPort,
+    secure: smtpSecure,
+    label: `primary:${smtpPort}/${smtpSecure ? "secure" : "starttls"}`,
+  };
+
+  const fallback: SmtpPreset = smtpPort === 465
+    ? { port: 587, secure: false, label: "fallback:587/starttls" }
+    : { port: 465, secure: true, label: "fallback:465/secure" };
+
+  return primary.port === fallback.port && primary.secure === fallback.secure
+    ? [primary]
+    : [primary, fallback];
+}
+
+function createTransporter(preset: SmtpPreset) {
+  return nodemailer.createTransport({
+    host: smtpHost,
+    port: preset.port,
+    secure: preset.secure,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+    pool: false,
+    maxConnections: 1,
+    maxMessages: 3,
+    rateDelta: 1000,
+    rateLimit: 1,
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
+    // En algunos entornos serverless, STARTTLS estricto falla por red intermedia
+    requireTLS: false,
+    tls: {
+      servername: smtpHost,
+      minVersion: "TLSv1.2",
+    },
+  });
+}
 
 export type EmailOptions = {
   to: string;
@@ -28,11 +64,23 @@ export type EmailOptions = {
 };
 
 export async function sendEmail(options: EmailOptions, retries = 3) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    const error = new Error("SMTP_USER o SMTP_PASSWORD no está configurado");
+    console.error("❌ Error de configuración SMTP:", error.message);
+    return { success: false, error };
+  }
+
   let lastError;
+  const presets = getSmtpPresets();
   
   for (let attempt = 1; attempt <= retries; attempt++) {
+    const preset = presets[(attempt - 1) % presets.length];
+    const transporter = createTransporter(preset);
+
     try {
-      console.log(`📧 Intento ${attempt}/${retries} enviando email a ${options.to}`);
+      console.log(
+        `📧 Intento ${attempt}/${retries} enviando email a ${options.to} usando ${preset.label}`
+      );
       
       const info = await transporter.sendMail({
         from: `"MotoHelp" <${process.env.SMTP_USER}>`,
@@ -46,7 +94,15 @@ export async function sendEmail(options: EmailOptions, retries = 3) {
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
       lastError = error;
-      console.error(`❌ Error en intento ${attempt}/${retries}:`, error.message);
+      console.error(
+        `❌ Error en intento ${attempt}/${retries}:`,
+        error?.message,
+        {
+          code: error?.code,
+          command: error?.command,
+          responseCode: error?.responseCode,
+        }
+      );
       
       // Si no es el último intento, esperar antes de reintentar
       if (attempt < retries) {
@@ -63,14 +119,20 @@ export async function sendEmail(options: EmailOptions, retries = 3) {
 
 // Verificar conexión de SMTP
 export async function verifyEmailConnection() {
-  try {
-    await transporter.verify();
-    console.log("✅ Servidor SMTP listo para enviar emails");
-    return true;
-  } catch (error) {
-    console.error("❌ Error en configuración SMTP:", error);
-    return false;
+  const presets = getSmtpPresets();
+
+  for (const preset of presets) {
+    try {
+      const transporter = createTransporter(preset);
+      await transporter.verify();
+      console.log(`✅ Servidor SMTP listo para enviar emails (${preset.label})`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Error en configuración SMTP (${preset.label}):`, error);
+    }
   }
+
+  return false;
 }
 
 /**
