@@ -39,16 +39,12 @@ type ServiceRequest = {
 type ServiceType = {
   id: string;
   name: string;
-  category: ServiceCategory;
+  category: string;
   description?: string | null;
   active: boolean;
 };
 
-type ServiceCategory =
-  | "MANTENIMIENTO_PREVENTIVO"
-  | "EMERGENCIAS"
-  | "REPARACIONES"
-  | "OTROS";
+type ServiceCategory = string;
 
 type ServiceActiveFilter = "ALL" | "ACTIVE" | "INACTIVE";
 
@@ -58,6 +54,33 @@ const CATEGORY_OPTIONS: Array<{ value: ServiceCategory; label: string; icon: str
   { value: "REPARACIONES", label: "Reparaciones", icon: "🛠️" },
   { value: "OTROS", label: "Otros", icon: "📦" },
 ];
+
+const CATEGORY_META = new Map(CATEGORY_OPTIONS.map((item) => [item.value, item]));
+
+function normalizeCategory(value: string): string {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Z0-9_]/g, "");
+}
+
+function formatCategoryLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getCategoryMeta(value: string): { label: string; icon: string } {
+  const known = CATEGORY_META.get(value);
+  if (known) {
+    return { label: known.label, icon: known.icon };
+  }
+  return { label: formatCategoryLabel(value), icon: "📁" };
+}
 
 type AdminStats = {
   totalServices: number;
@@ -101,6 +124,10 @@ export default function AdminDashboard() {
   const [serviceSearch, setServiceSearch] = useState("");
   const [serviceFilterCategory, setServiceFilterCategory] = useState<ServiceCategory | "ALL">("ALL");
   const [serviceFilterActive, setServiceFilterActive] = useState<ServiceActiveFilter>("ALL");
+  const [isServiceCatalogOpen, setIsServiceCatalogOpen] = useState(false);
+  const [isNewCategoryModalOpen, setIsNewCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [customCategories, setCustomCategories] = useState<ServiceCategory[]>([]);
   
   // Estados para crear mecánico
   const [mechanicName, setMechanicName] = useState("");
@@ -223,6 +250,32 @@ export default function AdminDashboard() {
     toast.error(data.message || "No se pudo eliminar");
   }
 
+  function handleAddCategory(event: React.FormEvent) {
+    event.preventDefault();
+
+    const normalized = normalizeCategory(newCategoryName);
+    if (!normalized) {
+      toast.error("Ingresa un nombre de categoría válido");
+      return;
+    }
+
+    const existsInServices = (serviceTypes ?? []).some((service) => service.category === normalized);
+    const existsInCustom = customCategories.includes(normalized);
+
+    if (existsInServices || existsInCustom) {
+      toast.error("Esa categoría ya existe");
+      return;
+    }
+
+    setCustomCategories((prev) => [...prev, normalized]);
+    setServiceCategory(normalized);
+    setEditServiceCategory(normalized);
+    setServiceFilterCategory(normalized);
+    setNewCategoryName("");
+    setIsNewCategoryModalOpen(false);
+    toast.success("✅ Categoría agregada");
+  }
+
   async function handleCreateMechanic(event: React.FormEvent) {
     event.preventDefault();
     setSavingMechanic(true);
@@ -299,10 +352,23 @@ export default function AdminDashboard() {
     return matchesSearch && matchesCategory && matchesActive;
   });
 
+  const categoryValues = Array.from(
+    new Set([
+      ...CATEGORY_OPTIONS.map((item) => item.value),
+      ...(serviceTypes ?? []).map((service) => service.category),
+      ...customCategories,
+    ])
+  );
+
+  const categoryOptions = categoryValues.map((value) => {
+    const meta = getCategoryMeta(value);
+    return { value, label: meta.label, icon: meta.icon };
+  });
+
   const groupedCategoryOptions =
     serviceFilterCategory === "ALL"
-      ? CATEGORY_OPTIONS
-      : CATEGORY_OPTIONS.filter((category) => category.value === serviceFilterCategory);
+      ? categoryOptions
+      : categoryOptions.filter((category) => category.value === serviceFilterCategory);
 
   const servicesByCategory = groupedCategoryOptions.map((category) => ({
     ...category,
@@ -463,6 +529,66 @@ export default function AdminDashboard() {
         <section className="grid gap-4">
           <Card className="border-white/10 bg-white/5 text-white">
             <CardHeader>
+              <CardTitle className="text-white">Catálogo de servicios</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4">
+              <div className="text-sm text-slate-300">
+                Gestiona categorías y servicios desde una vista enfocada.
+                <div className="mt-1 text-xs text-slate-400">
+                  {serviceTypes?.length ?? 0} servicios · {categoryOptions.length} categorías
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  className="bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => setIsNewCategoryModalOpen(true)}
+                >
+                  + Nueva categoría
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-orange-500 text-slate-950 hover:bg-orange-400"
+                  onClick={() => setIsServiceCatalogOpen(true)}
+                >
+                  Gestionar catálogo
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {isServiceCatalogOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+            <div className="w-full max-w-6xl max-h-[95vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 sm:px-6 py-4">
+                <div>
+                  <h2 className="text-xl font-semibold">Gestión de categorías y servicios</h2>
+                  <p className="text-sm text-slate-400">Organiza, crea y edita el catálogo desde aquí.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    className="bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => setIsNewCategoryModalOpen(true)}
+                  >
+                    + Nueva categoría
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    className="bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => setIsServiceCatalogOpen(false)}
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+
+              <div className="max-h-[85vh] overflow-y-auto p-5 sm:p-6">
+                <div className="space-y-4">
+          <Card className="border-white/10 bg-white/5 text-white">
+            <CardHeader>
               <CardTitle className="text-white">Agregar nuevo tipo</CardTitle>
             </CardHeader>
             <CardContent>
@@ -486,7 +612,7 @@ export default function AdminDashboard() {
                     onChange={(event) => setServiceCategory(event.target.value as ServiceCategory)}
                     className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
                   >
-                    {CATEGORY_OPTIONS.map((category) => (
+                    {categoryOptions.map((category) => (
                       <option key={category.value} value={category.value}>
                         {category.icon} {category.label}
                       </option>
@@ -538,7 +664,7 @@ export default function AdminDashboard() {
                   className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
                 >
                   <option value="ALL">Todas</option>
-                  {CATEGORY_OPTIONS.map((category) => (
+                  {categoryOptions.map((category) => (
                     <option key={category.value} value={category.value}>
                       {category.icon} {category.label}
                     </option>
@@ -611,7 +737,7 @@ export default function AdminDashboard() {
                                       onChange={(event) => setEditServiceCategory(event.target.value as ServiceCategory)}
                                       className="h-9 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-white"
                                     >
-                                      {CATEGORY_OPTIONS.map((category) => (
+                                      {categoryOptions.map((category) => (
                                         <option key={category.value} value={category.value}>
                                           {category.icon} {category.label}
                                         </option>
@@ -674,7 +800,11 @@ export default function AdminDashboard() {
           {!filteredServiceTypes.length && (
             <p className="text-slate-400">No hay servicios que coincidan con los filtros.</p>
           )}
-        </section>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <section className="grid gap-4">
           <h2 className="text-xl font-semibold text-white">Verificación de mecánicos</h2>
@@ -825,6 +955,64 @@ export default function AdminDashboard() {
           )}
         </section>
       </div>
+
+      {/* Modal para nueva categoría */}
+      {isNewCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
+            <div className="p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Agregar nueva categoría</h2>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="h-8 w-8 p-0 bg-white/10 text-white hover:bg-white/20"
+                  onClick={() => {
+                    setIsNewCategoryModalOpen(false);
+                    setNewCategoryName("");
+                  }}
+                >
+                  ✕
+                </Button>
+              </div>
+
+              <form className="space-y-4" onSubmit={handleAddCategory}>
+                <div className="space-y-2">
+                  <label className="text-sm text-slate-200" htmlFor="newCategoryName">Nombre de categoría</label>
+                  <input
+                    id="newCategoryName"
+                    value={newCategoryName}
+                    onChange={(event) => setNewCategoryName(event.target.value)}
+                    className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                    placeholder="Ej: Servicios Premium"
+                    required
+                  />
+                  <p className="text-xs text-slate-400">
+                    Se normalizará internamente para guardar consistencia (por ejemplo: SERVICIOS_PREMIUM).
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="default"
+                    className="flex-1 bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => {
+                      setIsNewCategoryModalOpen(false);
+                      setNewCategoryName("");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-orange-500 text-slate-950 hover:bg-orange-400">
+                    Guardar categoría
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal para crear mecánico */}
       {isCreateMechanicModalOpen && (

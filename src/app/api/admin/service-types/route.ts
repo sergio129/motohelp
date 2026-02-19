@@ -4,12 +4,17 @@ import { authOptions } from "@/lib/auth";
 import { serviceTypeService } from "@/services/serviceTypeService";
 import { z } from "zod";
 
-const serviceCategorySchema = z.enum([
-  "MANTENIMIENTO_PREVENTIVO",
-  "EMERGENCIAS",
-  "REPARACIONES",
-  "OTROS",
-]);
+const serviceCategorySchema = z
+  .string()
+  .min(2)
+  .max(60)
+  .transform((value) =>
+    value
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^A-Z0-9_]/g, "")
+  );
 
 const createSchema = z.object({
   name: z.string().min(2),
