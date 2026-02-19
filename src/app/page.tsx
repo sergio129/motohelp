@@ -86,7 +86,7 @@ export default function Home() {
               { name: "Cambio de aceite", emoji: "🛢️", desc: "Mantenimiento premium" },
               { name: "Revisión de frenos", emoji: "🛑", desc: "Seguridad garantizada" },
               { name: "Ajuste de cadena", emoji: "⛓️", desc: "Precisión técnica" },
-              { name: "Cambio de bujías", emoji: "🔌", desc: "Mejor rendimiento" },
+              { name: "Cambio de bujías", emoji: "⚡", desc: "Mejor rendimiento" },
               { name: "Cambio de batería", emoji: "🔋", desc: "Potencia renovada" },
               { name: "Revisión de suspensión", emoji: "🏍️", desc: "Comodidad en ruta" },
               { name: "Reparación de motor", emoji: "⚙️", desc: "Especialistas expertos" },
