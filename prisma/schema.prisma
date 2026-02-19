@@ -112,6 +112,7 @@ model ServiceRequest {
 model ServiceType {
   id          String   @id @default(cuid())
   name        String   @unique
+  category    String   @default("OTROS")
   description String?
   basePrice   Decimal?
   active      Boolean  @default(true)

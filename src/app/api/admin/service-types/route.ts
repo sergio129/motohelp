@@ -4,16 +4,29 @@ import { authOptions } from "@/lib/auth";
 import { serviceTypeService } from "@/services/serviceTypeService";
 import { z } from "zod";
 
+const serviceCategorySchema = z.enum([
+  "MANTENIMIENTO_PREVENTIVO",
+  "EMERGENCIAS",
+  "REPARACIONES",
+  "OTROS",
+]);
+
 const createSchema = z.object({
   name: z.string().min(2),
+  category: serviceCategorySchema,
   description: z.string().max(200).optional(),
 });
 
 const updateSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(2).optional(),
+  category: serviceCategorySchema.optional(),
   description: z.string().max(200).optional().nullable(),
   active: z.boolean().optional(),
+});
+
+const deleteSchema = z.object({
+  id: z.string().min(1),
 });
 
 async function requireAdmin() {
@@ -39,22 +52,48 @@ export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
-  const payload = await request.json();
-  const data = createSchema.parse(payload);
-  const created = await serviceTypeService.create(data);
-  return NextResponse.json(created, { status: 201 });
+  try {
+    const payload = await request.json();
+    const data = createSchema.parse(payload);
+    const created = await serviceTypeService.create(data);
+    return NextResponse.json(created, { status: 201 });
+  } catch {
+    return NextResponse.json({ message: "No se pudo crear el tipo de servicio" }, { status: 400 });
+  }
 }
 
 export async function PATCH(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
-  const payload = await request.json();
-  const data = updateSchema.parse(payload);
-  const updated = await serviceTypeService.update(data.id, {
-    name: data.name,
-    description: data.description ?? undefined,
-    active: data.active,
-  });
-  return NextResponse.json(updated);
+  try {
+    const payload = await request.json();
+    const data = updateSchema.parse(payload);
+    const updated = await serviceTypeService.update(data.id, {
+      name: data.name,
+      category: data.category,
+      description: data.description ?? undefined,
+      active: data.active,
+    });
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ message: "No se pudo actualizar el tipo de servicio" }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  try {
+    const payload = await request.json();
+    const data = deleteSchema.parse(payload);
+    await serviceTypeService.remove(data.id);
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json(
+      { message: "No se puede eliminar: el tipo de servicio está siendo usado por solicitudes o perfiles de mecánico" },
+      { status: 400 }
+    );
+  }
 }

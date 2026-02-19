@@ -25,17 +25,17 @@ async function main() {
   });
 
   const serviceTypes = [
-    { name: "Cambio de aceite", description: "Cambio de aceite y filtro" },
-    { name: "Diagnóstico eléctrico", description: "Revisión del sistema eléctrico" },
-    { name: "Pinchazo / Llantas", description: "Reparación o cambio de llanta" },
-    { name: "Batería", description: "Carga o reemplazo de batería" },
-    { name: "Frenos", description: "Mantenimiento y ajuste de frenos" },
+    { name: "Cambio de aceite", category: "MANTENIMIENTO_PREVENTIVO", description: "Cambio de aceite y filtro" },
+    { name: "Diagnóstico eléctrico", category: "MANTENIMIENTO_PREVENTIVO", description: "Revisión del sistema eléctrico" },
+    { name: "Pinchazo / Llantas", category: "EMERGENCIAS", description: "Reparación o cambio de llanta" },
+    { name: "Batería", category: "EMERGENCIAS", description: "Carga o reemplazo de batería" },
+    { name: "Frenos", category: "REPARACIONES", description: "Mantenimiento y ajuste de frenos" },
   ];
 
   for (const service of serviceTypes) {
     await prisma.serviceType.upsert({
       where: { name: service.name },
-      update: { description: service.description, active: true },
+      update: { category: service.category, description: service.description, active: true },
       create: { ...service, active: true },
     });
   }

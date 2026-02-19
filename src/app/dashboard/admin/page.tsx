@@ -39,9 +39,25 @@ type ServiceRequest = {
 type ServiceType = {
   id: string;
   name: string;
+  category: ServiceCategory;
   description?: string | null;
   active: boolean;
 };
+
+type ServiceCategory =
+  | "MANTENIMIENTO_PREVENTIVO"
+  | "EMERGENCIAS"
+  | "REPARACIONES"
+  | "OTROS";
+
+type ServiceActiveFilter = "ALL" | "ACTIVE" | "INACTIVE";
+
+const CATEGORY_OPTIONS: Array<{ value: ServiceCategory; label: string; icon: string }> = [
+  { value: "MANTENIMIENTO_PREVENTIVO", label: "Mantenimiento Preventivo", icon: "🔧" },
+  { value: "EMERGENCIAS", label: "Emergencias", icon: "🚨" },
+  { value: "REPARACIONES", label: "Reparaciones", icon: "🛠️" },
+  { value: "OTROS", label: "Otros", icon: "📦" },
+];
 
 type AdminStats = {
   totalServices: number;
@@ -75,8 +91,16 @@ export default function AdminDashboard() {
   const { data: stats } = useSWR<AdminStats>("/api/admin/stats", fetcher);
 
   const [serviceName, setServiceName] = useState("");
+  const [serviceCategory, setServiceCategory] = useState<ServiceCategory>("MANTENIMIENTO_PREVENTIVO");
   const [serviceDescription, setServiceDescription] = useState("");
   const [savingService, setSavingService] = useState(false);
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [editServiceName, setEditServiceName] = useState("");
+  const [editServiceCategory, setEditServiceCategory] = useState<ServiceCategory>("MANTENIMIENTO_PREVENTIVO");
+  const [editServiceDescription, setEditServiceDescription] = useState("");
+  const [serviceSearch, setServiceSearch] = useState("");
+  const [serviceFilterCategory, setServiceFilterCategory] = useState<ServiceCategory | "ALL">("ALL");
+  const [serviceFilterActive, setServiceFilterActive] = useState<ServiceActiveFilter>("ALL");
   
   // Estados para crear mecánico
   const [mechanicName, setMechanicName] = useState("");
@@ -112,16 +136,91 @@ export default function AdminDashboard() {
     event.preventDefault();
     setSavingService(true);
 
-    await fetch("/api/admin/service-types", {
-      method: "POST",
+    try {
+      const res = await fetch("/api/admin/service-types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: serviceName,
+          category: serviceCategory,
+          description: serviceDescription || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ message: "No se pudo crear el servicio" }));
+        toast.error(data.message || "No se pudo crear el servicio");
+        return;
+      }
+
+      setServiceName("");
+      setServiceCategory("MANTENIMIENTO_PREVENTIVO");
+      setServiceDescription("");
+      toast.success("✅ Servicio creado");
+      refreshServiceTypes();
+    } finally {
+      setSavingService(false);
+    }
+  }
+
+  function handleStartEdit(service: ServiceType) {
+    setEditingServiceId(service.id);
+    setEditServiceName(service.name);
+    setEditServiceCategory(service.category);
+    setEditServiceDescription(service.description || "");
+  }
+
+  function handleCancelEdit() {
+    setEditingServiceId(null);
+    setEditServiceName("");
+    setEditServiceCategory("MANTENIMIENTO_PREVENTIVO");
+    setEditServiceDescription("");
+  }
+
+  async function handleSaveEdit() {
+    if (!editingServiceId) return;
+
+    const res = await fetch("/api/admin/service-types", {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: serviceName, description: serviceDescription || undefined }),
+      body: JSON.stringify({
+        id: editingServiceId,
+        name: editServiceName,
+        category: editServiceCategory,
+        description: editServiceDescription || null,
+      }),
     });
 
-    setServiceName("");
-    setServiceDescription("");
-    setSavingService(false);
-    refreshServiceTypes();
+    if (res.ok) {
+      toast.success("✅ Servicio actualizado");
+      handleCancelEdit();
+      refreshServiceTypes();
+      return;
+    }
+
+    const data = await res.json().catch(() => ({ message: "No se pudo actualizar" }));
+    toast.error(data.message || "No se pudo actualizar");
+  }
+
+  async function handleDeleteService(id: string, name: string) {
+    if (!window.confirm(`¿Seguro que quieres eliminar "${name}"?`)) {
+      return;
+    }
+
+    const res = await fetch("/api/admin/service-types", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+
+    if (res.ok) {
+      toast.success("🗑️ Servicio eliminado");
+      refreshServiceTypes();
+      return;
+    }
+
+    const data = await res.json().catch(() => ({ message: "No se pudo eliminar" }));
+    toast.error(data.message || "No se pudo eliminar");
   }
 
   async function handleCreateMechanic(event: React.FormEvent) {
@@ -182,6 +281,33 @@ export default function AdminDashboard() {
     };
     return `${base} ${styles[status] ?? "bg-white/10 text-slate-200"}`;
   }
+
+  const filteredServiceTypes = (serviceTypes ?? []).filter((service) => {
+    const matchesSearch =
+      !serviceSearch.trim() ||
+      service.name.toLowerCase().includes(serviceSearch.trim().toLowerCase()) ||
+      (service.description ?? "").toLowerCase().includes(serviceSearch.trim().toLowerCase());
+
+    const matchesCategory =
+      serviceFilterCategory === "ALL" || service.category === serviceFilterCategory;
+
+    const matchesActive =
+      serviceFilterActive === "ALL" ||
+      (serviceFilterActive === "ACTIVE" && service.active) ||
+      (serviceFilterActive === "INACTIVE" && !service.active);
+
+    return matchesSearch && matchesCategory && matchesActive;
+  });
+
+  const groupedCategoryOptions =
+    serviceFilterCategory === "ALL"
+      ? CATEGORY_OPTIONS
+      : CATEGORY_OPTIONS.filter((category) => category.value === serviceFilterCategory);
+
+  const servicesByCategory = groupedCategoryOptions.map((category) => ({
+    ...category,
+    items: filteredServiceTypes.filter((service) => service.category === category.value),
+  }));
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-white">
@@ -340,7 +466,7 @@ export default function AdminDashboard() {
               <CardTitle className="text-white">Agregar nuevo tipo</CardTitle>
             </CardHeader>
             <CardContent>
-              <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateService}>
+              <form className="grid gap-4 md:grid-cols-3" onSubmit={handleCreateService}>
                 <div className="space-y-2">
                   <label className="text-sm text-slate-200" htmlFor="serviceName">Nombre</label>
                   <input
@@ -351,6 +477,21 @@ export default function AdminDashboard() {
                     placeholder="Ej: Cambio de aceite"
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-slate-200" htmlFor="serviceCategory">Categoría</label>
+                  <select
+                    id="serviceCategory"
+                    value={serviceCategory}
+                    onChange={(event) => setServiceCategory(event.target.value as ServiceCategory)}
+                    className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                  >
+                    {CATEGORY_OPTIONS.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {category.icon} {category.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm text-slate-200" htmlFor="serviceDesc">Descripción</label>
@@ -365,7 +506,7 @@ export default function AdminDashboard() {
                 <Button
                   type="submit"
                   disabled={savingService}
-                  className="bg-orange-500 text-slate-950 hover:bg-orange-400 md:col-span-2"
+                  className="bg-orange-500 text-slate-950 hover:bg-orange-400 md:col-span-3"
                 >
                   {savingService ? "Guardando..." : "Agregar servicio"}
                 </Button>
@@ -373,38 +514,166 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {serviceTypes?.map((service) => (
-              <Card key={service.id} className="border-white/10 bg-white/5 text-white">
-                <CardHeader>
-                  <CardTitle className="text-white">{service.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-slate-200">
-                  <p>{service.description ?? "Sin descripción"}</p>
-                  <div className="flex items-center justify-between">
-                    <span className={statusBadge(service.active ? "FINALIZADO" : "CANCELADO")}>
-                      {service.active ? "Activo" : "Inactivo"}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className={
-                        service.active
-                          ? "bg-white/10 text-white hover:bg-white/20"
-                          : "bg-orange-500 text-slate-950 hover:bg-orange-400"
-                      }
-                      onClick={() => handleToggleService(service.id, !service.active)}
-                    >
-                      {service.active ? "Desactivar" : "Activar"}
-                    </Button>
+          <Card className="border-white/10 bg-white/5 text-white">
+            <CardHeader>
+              <CardTitle className="text-white">Filtros de servicios</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-4">
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm text-slate-200" htmlFor="serviceSearch">Buscar</label>
+                <input
+                  id="serviceSearch"
+                  value={serviceSearch}
+                  onChange={(event) => setServiceSearch(event.target.value)}
+                  className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                  placeholder="Buscar por nombre o descripción"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-slate-200" htmlFor="serviceFilterCategory">Categoría</label>
+                <select
+                  id="serviceFilterCategory"
+                  value={serviceFilterCategory}
+                  onChange={(event) => setServiceFilterCategory(event.target.value as ServiceCategory | "ALL")}
+                  className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                >
+                  <option value="ALL">Todas</option>
+                  {CATEGORY_OPTIONS.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.icon} {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-slate-200" htmlFor="serviceFilterActive">Estado</label>
+                <select
+                  id="serviceFilterActive"
+                  value={serviceFilterActive}
+                  onChange={(event) => setServiceFilterActive(event.target.value as ServiceActiveFilter)}
+                  className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="ACTIVE">Activos</option>
+                  <option value="INACTIVE">Inactivos</option>
+                </select>
+              </div>
+              <div className="md:col-span-4 text-xs text-slate-400">
+                Mostrando <strong>{filteredServiceTypes.length}</strong> servicio(s)
+              </div>
+            </CardContent>
+          </Card>
+
+          {servicesByCategory.map((group) => (
+            <Card key={group.value} className="border-white/10 bg-white/5 text-white overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-white">{group.icon} {group.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {group.items.length ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-white/10 bg-white/5">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold text-slate-200">Nombre</th>
+                          <th className="px-4 py-3 text-left font-semibold text-slate-200">Descripción</th>
+                          <th className="px-4 py-3 text-center font-semibold text-slate-200">Estado</th>
+                          <th className="px-4 py-3 text-center font-semibold text-slate-200">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/10">
+                        {group.items.map((service) => {
+                          const isEditing = editingServiceId === service.id;
+                          return (
+                            <tr key={service.id} className="hover:bg-white/5 transition-colors">
+                              <td className="px-4 py-3 text-white">
+                                {isEditing ? (
+                                  <input
+                                    value={editServiceName}
+                                    onChange={(event) => setEditServiceName(event.target.value)}
+                                    className="h-9 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-white"
+                                  />
+                                ) : (
+                                  <span className="font-medium">{service.name}</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-slate-300">
+                                {isEditing ? (
+                                  <div className="grid gap-2 md:grid-cols-2">
+                                    <input
+                                      value={editServiceDescription}
+                                      onChange={(event) => setEditServiceDescription(event.target.value)}
+                                      className="h-9 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-white"
+                                      placeholder="Descripción"
+                                    />
+                                    <select
+                                      value={editServiceCategory}
+                                      onChange={(event) => setEditServiceCategory(event.target.value as ServiceCategory)}
+                                      className="h-9 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-white"
+                                    >
+                                      {CATEGORY_OPTIONS.map((category) => (
+                                        <option key={category.value} value={category.value}>
+                                          {category.icon} {category.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                ) : (
+                                  service.description || "Sin descripción"
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={statusBadge(service.active ? "FINALIZADO" : "CANCELADO")}>
+                                  {service.active ? "Activo" : "Inactivo"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                  {isEditing ? (
+                                    <>
+                                      <Button size="sm" className="bg-green-500 text-white hover:bg-green-600" onClick={handleSaveEdit}>
+                                        Guardar
+                                      </Button>
+                                      <Button size="sm" variant="default" className="bg-white/10 text-white hover:bg-white/20" onClick={handleCancelEdit}>
+                                        Cancelar
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button size="sm" variant="default" className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30" onClick={() => handleStartEdit(service)}>
+                                        Editar
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        className={service.active ? "bg-white/10 text-white hover:bg-white/20" : "bg-orange-500 text-slate-950 hover:bg-orange-400"}
+                                        onClick={() => handleToggleService(service.id, !service.active)}
+                                      >
+                                        {service.active ? "Desactivar" : "Activar"}
+                                      </Button>
+                                      <Button size="sm" variant="default" className="bg-red-500/20 text-red-300 hover:bg-red-500/30" onClick={() => handleDeleteService(service.id, service.name)}>
+                                        Eliminar
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-            {!serviceTypes?.length && (
-              <p className="text-slate-400">Aún no hay tipos de servicio configurados.</p>
-            )}
-          </div>
+                ) : (
+                  <p className="text-sm text-slate-400">No hay servicios en esta categoría.</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+
+          {!filteredServiceTypes.length && (
+            <p className="text-slate-400">No hay servicios que coincidan con los filtros.</p>
+          )}
         </section>
 
         <section className="grid gap-4">
