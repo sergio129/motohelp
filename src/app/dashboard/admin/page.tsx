@@ -128,6 +128,7 @@ export default function AdminDashboard() {
   const [isNewCategoryModalOpen, setIsNewCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [customCategories, setCustomCategories] = useState<ServiceCategory[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   
   // Estados para crear mecánico
   const [mechanicName, setMechanicName] = useState("");
@@ -229,25 +230,29 @@ export default function AdminDashboard() {
     toast.error(data.message || "No se pudo actualizar");
   }
 
-  async function handleDeleteService(id: string, name: string) {
-    if (!window.confirm(`¿Seguro que quieres eliminar "${name}"?`)) {
-      return;
-    }
+  function handleDeleteService(id: string, name: string) {
+    setDeleteConfirm({ id, name });
+  }
+
+  async function confirmDeleteService() {
+    if (!deleteConfirm) return;
 
     const res = await fetch("/api/admin/service-types", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id: deleteConfirm.id }),
     });
 
     if (res.ok) {
       toast.success("🗑️ Servicio eliminado");
       refreshServiceTypes();
+      setDeleteConfirm(null);
       return;
     }
 
     const data = await res.json().catch(() => ({ message: "No se pudo eliminar" }));
     toast.error(data.message || "No se pudo eliminar");
+    setDeleteConfirm(null);
   }
 
   function handleAddCategory(event: React.FormEvent) {
@@ -559,23 +564,25 @@ export default function AdminDashboard() {
         </section>
 
         {isServiceCatalogOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
-            <div className="w-full max-w-6xl max-h-[95vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 sm:px-6 py-4">
-                <div>
-                  <h2 className="text-xl font-semibold">Gestión de categorías y servicios</h2>
-                  <p className="text-sm text-slate-400">Organiza, crea y edita el catálogo desde aquí.</p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-4">
+            <div className="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/40 flex flex-col">
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 sm:px-5 py-3">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold">Gestión de categorías y servicios</h2>
+                  <p className="text-xs text-slate-400">Organiza, crea y edita el catálogo desde aquí.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <Button
                     type="button"
+                    size="sm"
                     className="bg-white/10 text-white hover:bg-white/20"
                     onClick={() => setIsNewCategoryModalOpen(true)}
                   >
-                    + Nueva categoría
+                    + Categoría
                   </Button>
                   <Button
                     type="button"
+                    size="sm"
                     variant="default"
                     className="bg-white/10 text-white hover:bg-white/20"
                     onClick={() => setIsServiceCatalogOpen(false)}
@@ -585,32 +592,32 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="max-h-[85vh] overflow-y-auto p-5 sm:p-6">
-                <div className="space-y-4">
+              <div className="overflow-y-auto flex-1 p-4 sm:p-5">
+                <div className="space-y-3">
           <Card className="border-white/10 bg-white/5 text-white">
-            <CardHeader>
-              <CardTitle className="text-white">Agregar nuevo tipo</CardTitle>
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
+              <CardTitle className="text-base">Agregar nuevo tipo</CardTitle>
             </CardHeader>
-            <CardContent>
-              <form className="grid gap-4 md:grid-cols-3" onSubmit={handleCreateService}>
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-200" htmlFor="serviceName">Nombre</label>
+            <CardContent className="px-3 sm:px-4 pb-3">
+              <form className="grid gap-2 md:grid-cols-3 lg:grid-cols-4" onSubmit={handleCreateService}>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300" htmlFor="serviceName">Nombre</label>
                   <input
                     id="serviceName"
                     value={serviceName}
                     onChange={(event) => setServiceName(event.target.value)}
-                    className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                    className="h-8 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-sm text-white"
                     placeholder="Ej: Cambio de aceite"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-200" htmlFor="serviceCategory">Categoría</label>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300" htmlFor="serviceCategory">Categoría</label>
                   <select
                     id="serviceCategory"
                     value={serviceCategory}
                     onChange={(event) => setServiceCategory(event.target.value as ServiceCategory)}
-                    className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                    className="h-8 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-sm text-white"
                   >
                     {categoryOptions.map((category) => (
                       <option key={category.value} value={category.value}>
@@ -619,49 +626,50 @@ export default function AdminDashboard() {
                     ))}
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-200" htmlFor="serviceDesc">Descripción</label>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300" htmlFor="serviceDesc">Descripción</label>
                   <input
                     id="serviceDesc"
                     value={serviceDescription}
                     onChange={(event) => setServiceDescription(event.target.value)}
-                    className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                    className="h-8 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-sm text-white"
                     placeholder="Opcional"
                   />
                 </div>
                 <Button
                   type="submit"
+                  size="sm"
                   disabled={savingService}
-                  className="bg-orange-500 text-slate-950 hover:bg-orange-400 md:col-span-3"
+                  className="bg-orange-500 text-slate-950 hover:bg-orange-400 h-8 md:col-span-1 lg:col-span-1 mt-auto"
                 >
-                  {savingService ? "Guardando..." : "Agregar servicio"}
+                  {savingService ? "Guardando..." : "Agregar"}
                 </Button>
               </form>
             </CardContent>
           </Card>
 
           <Card className="border-white/10 bg-white/5 text-white">
-            <CardHeader>
-              <CardTitle className="text-white">Filtros de servicios</CardTitle>
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
+              <CardTitle className="text-base">Filtros</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm text-slate-200" htmlFor="serviceSearch">Buscar</label>
+            <CardContent className="px-3 sm:px-4 pb-3 grid gap-2 md:grid-cols-4">
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-xs text-slate-300" htmlFor="serviceSearch">Buscar</label>
                 <input
                   id="serviceSearch"
                   value={serviceSearch}
                   onChange={(event) => setServiceSearch(event.target.value)}
-                  className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
-                  placeholder="Buscar por nombre o descripción"
+                  className="h-8 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-sm text-white"
+                  placeholder="Por nombre o descripción"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-200" htmlFor="serviceFilterCategory">Categoría</label>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-300" htmlFor="serviceFilterCategory">Categoría</label>
                 <select
                   id="serviceFilterCategory"
                   value={serviceFilterCategory}
                   onChange={(event) => setServiceFilterCategory(event.target.value as ServiceCategory | "ALL")}
-                  className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                  className="h-8 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-sm text-white"
                 >
                   <option value="ALL">Todas</option>
                   {categoryOptions.map((category) => (
@@ -671,21 +679,21 @@ export default function AdminDashboard() {
                   ))}
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-200" htmlFor="serviceFilterActive">Estado</label>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-300" htmlFor="serviceFilterActive">Estado</label>
                 <select
                   id="serviceFilterActive"
                   value={serviceFilterActive}
                   onChange={(event) => setServiceFilterActive(event.target.value as ServiceActiveFilter)}
-                  className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 text-white"
+                  className="h-8 w-full rounded border border-white/10 bg-slate-900/60 px-2 text-sm text-white"
                 >
                   <option value="ALL">Todos</option>
                   <option value="ACTIVE">Activos</option>
                   <option value="INACTIVE">Inactivos</option>
                 </select>
               </div>
-              <div className="md:col-span-4 text-xs text-slate-400">
-                Mostrando <strong>{filteredServiceTypes.length}</strong> servicio(s)
+              <div className="text-xs text-slate-400 flex items-end pb-0">
+                <strong>{filteredServiceTypes.length}</strong>&nbsp;servicio(s)
               </div>
             </CardContent>
           </Card>
@@ -802,9 +810,39 @@ export default function AdminDashboard() {
           )}
                 </div>
               </div>
+
+              {deleteConfirm && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+                  <div className="rounded-xl border border-red-500/30 bg-slate-900 shadow-lg w-96 p-5">
+                    <h3 className="text-lg font-semibold text-white mb-2">¿Eliminar servicio?</h3>
+                    <p className="text-sm text-slate-300 mb-4">
+                      ¿Estás seguro de que quieres eliminar <strong>"{deleteConfirm.name}"</strong>?
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="bg-white/10 text-white hover:bg-white/20"
+                        onClick={() => setDeleteConfirm(null)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="bg-red-600 text-white hover:bg-red-700"
+                        onClick={confirmDeleteService}
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
+
 
         <section className="grid gap-4">
           <h2 className="text-xl font-semibold text-white">Verificación de mecánicos</h2>
