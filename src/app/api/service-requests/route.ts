@@ -8,6 +8,7 @@ import { setCORSHeaders, handleCORSPreflight } from "@/lib/cors";
 import { z } from "zod";
 import { mechanicProfileService } from "@/services/mechanicProfileService";
 import { serviceRequestService } from "@/services/serviceRequestService";
+import { NotificationService } from "@/services/notificationService";
 
 export async function OPTIONS(request: NextRequest) {
   return handleCORSPreflight(request);
@@ -102,6 +103,21 @@ export async function POST(request: NextRequest) {
       scheduledAt: data.scheduledAt,
       price: data.price,
     });
+
+    if (created.client?.email && created.serviceType?.name && created.caseNumber) {
+      NotificationService.notifyServiceCreated({
+        clientEmail: created.client.email,
+        clientName: created.client.name,
+        serviceName: created.serviceType.name,
+        address: created.address,
+        scheduledAt: created.scheduledAt.toLocaleString("es-CO", {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: "America/Bogota",
+        }),
+        caseNumber: created.caseNumber,
+      }).catch((err) => console.error("Error sending service created notification:", err));
+    }
 
     const response = NextResponse.json(created, { status: 201 });
     return setCORSHeaders(response, request.headers.get("origin"));

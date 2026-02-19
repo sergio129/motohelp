@@ -89,6 +89,7 @@ model Address {
 
 model ServiceRequest {
   id          String        @id @default(cuid())
+  caseNumber  String        @unique
   clientId    String
   mechanicId  String?
   serviceTypeId String?

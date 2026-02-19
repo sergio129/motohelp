@@ -14,6 +14,7 @@ import { RatingComponent } from "@/components/RatingComponent";
 
 type ServiceRequest = {
   id: string;
+  caseNumber: string;
   description: string;
   address: string;
   status: string;
@@ -488,6 +489,7 @@ export default function ClientDashboard() {
               <Card key={item.id} className="border-white/10 bg-white/5 text-white">
                 <CardHeader>
                   <CardTitle className="text-white">{item.serviceType?.name ?? "Servicio"}</CardTitle>
+                  <p className="text-xs text-slate-400">🧾 Caso: {item.caseNumber}</p>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-slate-200">
                   <p>{item.description}</p>
@@ -541,6 +543,7 @@ export default function ClientDashboard() {
                 <table className="w-full text-base">
                   <thead className="border-b border-white/10 bg-white/5">
                     <tr>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Caso</th>
                       <th className="px-6 py-4 text-left font-semibold text-slate-200">Servicio</th>
                       <th className="px-6 py-4 text-left font-semibold text-slate-200">Descripción</th>
                       <th className="px-6 py-4 text-left font-semibold text-slate-200">Dirección</th>
@@ -554,6 +557,7 @@ export default function ClientDashboard() {
                       ?.filter((item) => ["FINALIZADO", "CANCELADO"].includes(item.status))
                       .map((item) => (
                       <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-mono text-xs text-orange-300">{item.caseNumber}</td>
                         <td className="px-6 py-4 font-medium text-white">{item.serviceType?.name ?? "Servicio"}</td>
                         <td className="px-6 py-4 text-slate-300">{item.description}</td>
                         <td className="px-6 py-4 text-slate-300 text-sm">{item.address}</td>
@@ -1133,6 +1137,10 @@ export default function ClientDashboard() {
                     <CardTitle className="text-white">Servicio</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm text-slate-200">
+                    <div>
+                      <p className="text-xs text-slate-400">Número de caso</p>
+                      <p className="font-mono text-orange-300">{selectedServiceDetails.caseNumber}</p>
+                    </div>
                     <div>
                       <p className="text-xs text-slate-400">Tipo</p>
                       <p>{selectedServiceDetails?.serviceType?.name ?? "Sin especificar"}</p>

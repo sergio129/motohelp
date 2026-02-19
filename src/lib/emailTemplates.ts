@@ -51,6 +51,53 @@ const buttonStyles = `
 `;
 
 /**
+ * Email de confirmación al crear una solicitud
+ */
+export function emailServiceCreated(data: {
+  clientName: string;
+  caseNumber: string;
+  serviceName: string;
+  address: string;
+  scheduledAt: string;
+}) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="${baseStyles}">
+        <div style="${containerStyles}">
+          <div style="${headerStyles}">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🧾 Solicitud creada con éxito</h1>
+          </div>
+          <div style="padding: 30px 20px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              Hola <strong>${data.clientName}</strong>,
+            </p>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              Tu solicitud fue registrada correctamente. Usa este número para seguimiento y soporte:
+            </p>
+            <div style="background-color: #fff7ed; border: 1px solid #fdba74; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; font-size: 18px;"><strong>📌 Caso:</strong> ${data.caseNumber}</p>
+            </div>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Servicio:</strong> ${data.serviceName}</p>
+              <p style="margin: 5px 0;"><strong>Dirección:</strong> ${data.address}</p>
+              <p style="margin: 5px 0;"><strong>Fecha programada:</strong> ${data.scheduledAt}</p>
+            </div>
+            <a href="${getBaseUrl()}/dashboard/client" style="${buttonStyles}">
+              Ver mi solicitud
+            </a>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
  * Email cuando mecánico acepta solicitud del cliente
  */
 export function emailMechanicAccepted(data: {
@@ -59,6 +106,7 @@ export function emailMechanicAccepted(data: {
   serviceName: string;
   address: string;
   mechanicPhone?: string;
+  caseNumber?: string;
 }) {
   return `
     <!DOCTYPE html>
@@ -80,6 +128,7 @@ export function emailMechanicAccepted(data: {
               Buenas noticias! <strong>${data.mechanicName}</strong> ha aceptado tu solicitud de servicio.
             </p>
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              ${data.caseNumber ? `<p style="margin: 5px 0;"><strong>Número de caso:</strong> ${data.caseNumber}</p>` : ""}
               <p style="margin: 5px 0;"><strong>Servicio:</strong> ${data.serviceName}</p>
               <p style="margin: 5px 0;"><strong>Dirección:</strong> ${data.address}</p>
               ${data.mechanicPhone ? `<p style="margin: 5px 0;"><strong>Teléfono del mecánico:</strong> ${data.mechanicPhone}</p>` : ""}
@@ -109,6 +158,7 @@ export function emailMechanicOnWay(data: {
   serviceName: string;
   address: string;
   estimatedTime?: string;
+  caseNumber?: string;
 }) {
   return `
     <!DOCTYPE html>
@@ -130,6 +180,7 @@ export function emailMechanicOnWay(data: {
               <strong>${data.mechanicName}</strong> ya está en camino hacia tu ubicación.
             </p>
             <div style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              ${data.caseNumber ? `<p style="margin: 5px 0;"><strong>Número de caso:</strong> ${data.caseNumber}</p>` : ""}
               <p style="margin: 5px 0;"><strong>Servicio:</strong> ${data.serviceName}</p>
               <p style="margin: 5px 0;"><strong>Destino:</strong> ${data.address}</p>
               ${data.estimatedTime ? `<p style="margin: 5px 0;"><strong>Tiempo estimado:</strong> ${data.estimatedTime}</p>` : ""}
@@ -155,6 +206,7 @@ export function emailServiceInProgress(data: {
   mechanicName: string;
   serviceName: string;
   address: string;
+  caseNumber?: string;
 }) {
   return `
     <!DOCTYPE html>
@@ -176,6 +228,7 @@ export function emailServiceInProgress(data: {
               <strong>${data.mechanicName}</strong> ha iniciado el servicio de <strong>${data.serviceName}</strong>.
             </p>
             <div style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              ${data.caseNumber ? `<p style="margin: 5px 0;"><strong>🧾 Caso:</strong> ${data.caseNumber}</p>` : ""}
               <p style="margin: 5px 0;"><strong>🔧 Estado:</strong> En proceso</p>
               <p style="margin: 5px 0;"><strong>📍 Ubicación:</strong> ${data.address}</p>
             </div>
@@ -201,6 +254,7 @@ export function emailServiceCompleted(data: {
   serviceName: string;
   notes?: string;
   serviceRequestId: string;
+  caseNumber?: string;
 }) {
   return `
     <!DOCTYPE html>
@@ -221,6 +275,7 @@ export function emailServiceCompleted(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               <strong>${data.mechanicName}</strong> ha finalizado el servicio de <strong>${data.serviceName}</strong>.
             </p>
+            ${data.caseNumber ? `<p style="font-size: 16px; margin-bottom: 20px;"><strong>🧾 Número de caso:</strong> ${data.caseNumber}</p>` : ""}
             ${data.notes ? `
               <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 0;"><strong>Notas del mecánico:</strong></p>
@@ -251,6 +306,7 @@ export function emailServiceCanceled(data: {
   serviceName: string;
   canceledBy: "CLIENT" | "MECHANIC";
   reason?: string;
+  caseNumber?: string;
 }) {
   return `
     <!DOCTYPE html>
@@ -271,6 +327,7 @@ export function emailServiceCanceled(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               Lamentamos informarte que el servicio de <strong>${data.serviceName}</strong> ha sido cancelado.
             </p>
+            ${data.caseNumber ? `<p style="font-size: 16px; margin-bottom: 20px;"><strong>🧾 Número de caso:</strong> ${data.caseNumber}</p>` : ""}
             ${data.reason ? `
               <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 0;"><strong>Motivo:</strong></p>

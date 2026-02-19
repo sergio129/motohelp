@@ -62,6 +62,7 @@ export const serviceRequestRepository = {
   },
 
   create(data: {
+    caseNumber: string;
     clientId: string;
     serviceTypeId: string;
     description: string;
@@ -71,12 +72,17 @@ export const serviceRequestRepository = {
   }) {
     return prisma.serviceRequest.create({
       data: {
+        caseNumber: data.caseNumber,
         clientId: data.clientId,
         serviceTypeId: data.serviceTypeId,
         description: data.description,
         address: data.address,
         scheduledAt: data.scheduledAt,
         price: data.price,
+      },
+      include: {
+        client: true,
+        serviceType: true,
       },
     });
   },

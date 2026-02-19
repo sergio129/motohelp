@@ -27,6 +27,7 @@ type MechanicProfile = {
 
 type ServiceRequest = {
   id: string;
+  caseNumber: string;
   description: string;
   address: string;
   status: string;
@@ -497,6 +498,7 @@ export default function AdminDashboard() {
                 <table className="w-full text-base">
                   <thead className="border-b border-white/10 bg-white/5">
                     <tr>
+                      <th className="px-6 py-4 text-left font-semibold text-slate-200">Caso</th>
                       <th className="px-6 py-4 text-left font-semibold text-slate-200">Servicio</th>
                       <th className="px-6 py-4 text-left font-semibold text-slate-200">Descripción</th>
                       <th className="px-6 py-4 text-left font-semibold text-slate-200">Cliente</th>
@@ -509,6 +511,7 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-white/10">
                     {requests.map((request) => (
                       <tr key={request.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-mono text-xs text-orange-300">{request.caseNumber}</td>
                         <td className="px-6 py-4 font-medium text-white">{request.serviceType?.name ?? "Servicio"}</td>
                         <td className="px-6 py-4 text-slate-300 text-sm">{request.description}</td>
                         <td className="px-6 py-4 text-slate-300">{request.client?.name ?? "Sin asignar"}</td>
@@ -672,6 +675,10 @@ export default function AdminDashboard() {
 
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400">Número de caso</p>
+                    <p className="font-mono text-orange-300">{selectedServiceRequest.caseNumber}</p>
+                  </div>
                   <div className="space-y-1">
                     <p className="text-xs text-slate-400">Servicio</p>
                     <p className="font-medium text-white">{selectedServiceRequest.serviceType?.name ?? "Servicio"}</p>

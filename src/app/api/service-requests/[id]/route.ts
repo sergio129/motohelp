@@ -64,6 +64,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
           serviceName: updated.serviceType.name,
           address: updated.address,
           mechanicPhone: profile.user?.phone || undefined,
+          caseNumber: updated.caseNumber,
         }).catch(err => console.error("Error sending notification:", err));
       }
       
@@ -119,6 +120,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
           address: updated.address,
           notes: updated.notes || undefined,
           serviceRequestId: updated.id,
+          caseNumber: updated.caseNumber,
         }).catch(err => console.error(`[Notification] Error sending ${data.status} notification:`, err));
       } else {
         console.warn(`[Notification] Cannot send notification - Missing data: client=${!!updated.client?.email}, mechanic=${!!updated.mechanic}, serviceType=${!!updated.serviceType}`);

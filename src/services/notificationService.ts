@@ -5,6 +5,7 @@
 
 import { sendEmail } from "@/lib/email";
 import {
+  emailServiceCreated,
   emailMechanicAccepted,
   emailMechanicOnWay,
   emailServiceInProgress,
@@ -25,6 +26,16 @@ interface ServiceAcceptedData {
   serviceName: string;
   address: string;
   mechanicPhone?: string;
+  caseNumber?: string;
+}
+
+interface ServiceCreatedData {
+  clientEmail: string;
+  clientName: string;
+  serviceName: string;
+  address: string;
+  scheduledAt: string;
+  caseNumber: string;
 }
 
 interface ServiceOnWayData {
@@ -34,6 +45,7 @@ interface ServiceOnWayData {
   serviceName: string;
   address: string;
   estimatedTime?: string;
+  caseNumber?: string;
 }
 
 interface ServiceInProgressData {
@@ -42,6 +54,7 @@ interface ServiceInProgressData {
   mechanicName: string;
   serviceName: string;
   address: string;
+  caseNumber?: string;
 }
 
 interface ServiceCompletedData {
@@ -51,6 +64,7 @@ interface ServiceCompletedData {
   serviceName: string;
   notes?: string;
   serviceRequestId: string;
+  caseNumber?: string;
 }
 
 interface ServiceCanceledData {
@@ -59,6 +73,7 @@ interface ServiceCanceledData {
   serviceName: string;
   canceledBy: "CLIENT" | "MECHANIC";
   reason?: string;
+  caseNumber?: string;
 }
 
 interface NewServiceAvailableData {
@@ -97,6 +112,32 @@ interface WelcomeData {
 
 export class NotificationService {
   /**
+   * Notifica al cliente que su solicitud fue creada
+   */
+  static async notifyServiceCreated(data: ServiceCreatedData): Promise<boolean> {
+    try {
+      const html = emailServiceCreated({
+        clientName: data.clientName,
+        caseNumber: data.caseNumber,
+        serviceName: data.serviceName,
+        address: data.address,
+        scheduledAt: data.scheduledAt,
+      });
+
+      await sendEmail({
+        to: data.clientEmail,
+        subject: `🧾 Solicitud creada - Caso ${data.caseNumber}`,
+        html,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("[NotificationService] Error sending service created email:", error);
+      return false;
+    }
+  }
+
+  /**
    * Notifica al cliente que su solicitud fue aceptada
    */
   static async notifyServiceAccepted(data: ServiceAcceptedData): Promise<boolean> {
@@ -107,6 +148,7 @@ export class NotificationService {
         serviceName: data.serviceName,
         address: data.address,
         mechanicPhone: data.mechanicPhone,
+        caseNumber: data.caseNumber,
       });
 
       await sendEmail({
@@ -133,6 +175,7 @@ export class NotificationService {
         serviceName: data.serviceName,
         address: data.address,
         estimatedTime: data.estimatedTime,
+        caseNumber: data.caseNumber,
       });
 
       await sendEmail({
@@ -159,6 +202,7 @@ export class NotificationService {
         mechanicName: data.mechanicName,
         serviceName: data.serviceName,
         address: data.address,
+        caseNumber: data.caseNumber,
       });
 
       console.log("[NotificationService] Sending EN_PROCESO email...");
@@ -187,6 +231,7 @@ export class NotificationService {
         serviceName: data.serviceName,
         notes: data.notes,
         serviceRequestId: data.serviceRequestId,
+        caseNumber: data.caseNumber,
       });
 
       await sendEmail({
@@ -212,6 +257,7 @@ export class NotificationService {
         serviceName: data.serviceName,
         canceledBy: data.canceledBy,
         reason: data.reason,
+        caseNumber: data.caseNumber,
       });
 
       await sendEmail({
@@ -342,6 +388,7 @@ export class NotificationService {
       address: string;
       notes?: string;
       serviceRequestId: string;
+      caseNumber?: string;
     }
   ): Promise<boolean> {
     console.log(`[NotificationService] notifyStatusChange called with status: ${newStatus}`);
@@ -372,6 +419,7 @@ export class NotificationService {
           serviceName: data.serviceName,
           canceledBy: "MECHANIC", // Por defecto asumimos que fue el mecánico
           reason: data.notes,
+          caseNumber: data.caseNumber,
         });
       
       default:

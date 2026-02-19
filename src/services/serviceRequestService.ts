@@ -1,5 +1,6 @@
 import { serviceRequestRepository } from "@/repositories/serviceRequestRepository";
 import { statusHistoryRepository } from "@/repositories/statusHistoryRepository";
+import { Prisma } from "@prisma/client";
 
 type ServiceStatus =
   | "PENDIENTE"
@@ -8,6 +9,14 @@ type ServiceStatus =
   | "EN_PROCESO"
   | "FINALIZADO"
   | "CANCELADO";
+
+function generateCaseNumber(date = new Date()): string {
+  const yyyy = date.getFullYear().toString();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `MH-${yyyy}${mm}${dd}-${random}`;
+}
 
 export const serviceRequestService = {
   listByClient(clientId: string) {
@@ -38,7 +47,28 @@ export const serviceRequestService = {
     scheduledAt: Date;
     price?: number;
   }) {
-    return serviceRequestRepository.create(data);
+    return (async () => {
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        const caseNumber = generateCaseNumber();
+        try {
+          return await serviceRequestRepository.create({
+            ...data,
+            caseNumber,
+          });
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002" &&
+            attempt < 5
+          ) {
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      throw new Error("NO_CASE_NUMBER");
+    })();
   },
 
   async updateNotes(id: string, notes: string, userId: string) {
