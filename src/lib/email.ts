@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { emailPasswordReset } from "./emailTemplates";
-import { resend, resendFromEmail } from "./resendClient";
+import { resend } from "./resendClient";
 
 const smtpHost = (process.env.SMTP_HOST || "smtp.gmail.com").trim();
 const smtpPort = Number.parseInt((process.env.SMTP_PORT || "587").trim(), 10);
@@ -63,12 +63,53 @@ export type EmailOptions = {
 };
 
 export async function sendEmail(options: EmailOptions, retries = 3) {
-  // Intentar Resend primero si está configurado
+  // Intento principal: SMTP (más estable en Vercel)
+  if (process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
+    let lastError;
+    const presets = getSmtpPresets();
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      const preset = presets[(attempt - 1) % presets.length];
+      const transporter = createTransporter(preset);
+
+      try {
+        console.log(
+          `📧 Intento SMTP ${attempt}/${retries} a ${options.to} usando ${preset.label}`
+        );
+        
+        const info = await transporter.sendMail({
+          from: `"MotoHelp" <${process.env.SMTP_USER}>`,
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          text: options.text || options.html.replace(/<[^>]*>/g, ""),
+        });
+
+        console.log("✅ Email enviado via SMTP:", info.messageId);
+        return { success: true, messageId: info.messageId };
+      } catch (error: any) {
+        lastError = error;
+        console.error(
+          `❌ Error SMTP intento ${attempt}/${retries}:`,
+          error?.message
+        );
+        
+        if (attempt < retries) {
+          const waitTime = attempt * 2000;
+          console.log(`⏳ Esperando ${waitTime}ms antes de reintentar...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+    console.error("❌ SMTP agotó reintentos:", lastError?.message);
+  }
+
+  // Fallback: Intentar Resend como último recurso
   if (resend) {
     try {
-      console.log(`📧 Intento Resend enviando email a ${options.to}`);
+      console.log(`📧 Intento Resend como fallback para ${options.to}`);
       const result = await resend.emails.send({
-        from: `MotoHelp <${resendFromEmail}>`,
+        from: "MotoHelp <noreply@resend.dev>",
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -82,63 +123,14 @@ export async function sendEmail(options: EmailOptions, retries = 3) {
       console.log("✅ Email enviado via Resend:", result.data?.id);
       return { success: true, messageId: result.data?.id };
     } catch (error: any) {
-      console.error(`❌ Resend falló, intentando SMTP:`, error?.message);
-      // Continuar con SMTP como fallback
+      console.error(`❌ Resend también falló:`, error?.message);
     }
   }
 
-  // Fallback: intentar SMTP
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-    const error = new Error("SMTP_USER o SMTP_PASSWORD no está configurado");
-    console.error("❌ Error de configuración SMTP:", error.message);
-    return { success: false, error };
-  }
-
-  let lastError;
-  const presets = getSmtpPresets();
-  
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    const preset = presets[(attempt - 1) % presets.length];
-    const transporter = createTransporter(preset);
-
-    try {
-      console.log(
-        `📧 Intento ${attempt}/${retries} enviando email a ${options.to} usando ${preset.label}`
-      );
-      
-      const info = await transporter.sendMail({
-        from: `"MotoHelp" <${process.env.SMTP_USER}>`,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text || options.html.replace(/<[^>]*>/g, ""), // Fallback a texto plano
-      });
-
-      console.log("✅ Email enviado:", info.messageId);
-      return { success: true, messageId: info.messageId };
-    } catch (error: any) {
-      lastError = error;
-      console.error(
-        `❌ Error en intento ${attempt}/${retries}:`,
-        error?.message,
-        {
-          code: error?.code,
-          command: error?.command,
-          responseCode: error?.responseCode,
-        }
-      );
-      
-      // Si no es el último intento, esperar antes de reintentar
-      if (attempt < retries) {
-        const waitTime = attempt * 2000; // Backoff exponencial: 2s, 4s, 6s
-        console.log(`⏳ Esperando ${waitTime}ms antes de reintentar...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-      }
-    }
-  }
-  
-  console.error("❌ Error al enviar email después de todos los intentos:", lastError);
-  return { success: false, error: lastError };
+  // Si llegamos aquí, ambos fallaron
+  const error = new Error("No fue posible enviar email. SMTP y Resend agotados.");
+  console.error("❌ Error final:", error.message);
+  return { success: false, error };
 }
 
 // Verificar conexión de SMTP
