@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { emailPasswordReset } from "./emailTemplates";
+import { resend } from "./resendClient";
 
 const smtpHost = (process.env.SMTP_HOST || "smtp.gmail.com").trim();
 const smtpPort = Number.parseInt((process.env.SMTP_PORT || "587").trim(), 10);
@@ -62,6 +63,31 @@ export type EmailOptions = {
 };
 
 export async function sendEmail(options: EmailOptions, retries = 3) {
+  // Intentar Resend primero si está configurado
+  if (resend) {
+    try {
+      console.log(`📧 Intento Resend enviando email a ${options.to}`);
+      const result = await resend.emails.send({
+        from: `MotoHelp <sanayaromero62@gmail.com>`, // Cambiar a tu dominio verificado
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
+
+      if (result.error) {
+        throw new Error(`Resend error: ${result.error.message}`);
+      }
+
+      console.log("✅ Email enviado via Resend:", result.data?.id);
+      return { success: true, messageId: result.data?.id };
+    } catch (error: any) {
+      console.error(`❌ Resend falló, intentando SMTP:`, error?.message);
+      // Continuar con SMTP como fallback
+    }
+  }
+
+  // Fallback: intentar SMTP
   if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
     const error = new Error("SMTP_USER o SMTP_PASSWORD no está configurado");
     console.error("❌ Error de configuración SMTP:", error.message);
